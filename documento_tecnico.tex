@@ -1,0 +1,482 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{graphicx}
+\usepackage[colorlinks=true, linkcolor=darkblue, citecolor=darkgreen, urlcolor=darkblue]{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{geometry}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tcolorbox}
+% Reemplazamos fontspec (solo para XeLaTeX/LuaLaTeX) por fuentes estándar
+\usepackage{lmodern}
+\usepackage{setspace}
+\usepackage{microtype}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{pifont}
+\usepackage{wrapfig}
+\usepackage{mdframed}
+\usepackage{lipsum}
+\usepackage{bookmark}
+\usepackage{lastpage}
+
+% Definir colores corporativos
+\definecolor{maincolor}{RGB}{0, 75, 145}  % Azul corporativo
+\definecolor{secondcolor}{RGB}{220, 53, 69}  % Rojo para alertas/acciones
+\definecolor{thirdcolor}{RGB}{40, 167, 69}  % Verde para éxito
+\definecolor{darkblue}{RGB}{0, 51, 102}
+\definecolor{darkgreen}{RGB}{0, 102, 51}
+\definecolor{lightgray}{RGB}{240, 240, 240}
+\definecolor{darkgray}{RGB}{80, 80, 80}
+
+% Configuración de márgenes
+\geometry{left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm}
+
+% Configuración de encabezados y pies de página
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{1pt}
+\renewcommand{\footrulewidth}{0.5pt}
+\fancyhead[L]{\textcolor{maincolor}{\textbf{FireGuardian}}}
+\fancyhead[R]{\textcolor{darkgray}{Sistema de Gestión de Extintores}}
+\fancyfoot[L]{\textcolor{darkgray}{\small Documento Confidencial}}
+\fancyfoot[C]{\textcolor{darkgray}{\thepage\ de \pageref{LastPage}}}
+\fancyfoot[R]{\textcolor{darkgray}{\small\today}}
+
+% Configuración de títulos
+\titleformat{\section}
+  {\normalfont\Large\bfseries\color{maincolor}}{\thesection}{1em}{}
+\titlespacing*{\section}{0pt}{3.5ex plus 1ex minus .2ex}{2.3ex plus .2ex}
+
+\titleformat{\subsection}
+  {\normalfont\large\bfseries\color{darkblue}}{\thesubsection}{1em}{}
+\titlespacing*{\subsection}{0pt}{3.25ex plus 1ex minus .2ex}{1.5ex plus .2ex}
+
+\titleformat{\subsubsection}
+  {\normalfont\normalsize\bfseries\color{darkgray}}{\thesubsubsection}{1em}{}
+\titlespacing*{\subsubsection}{0pt}{3.25ex plus 1ex minus .2ex}{1.5ex plus .2ex}
+
+% Estilo para cajas de información
+\newtcolorbox{infobox}[1][]{%
+  enhanced,
+  colback=lightgray!30!white,
+  colframe=maincolor,
+  arc=0mm,
+  title=#1,
+  fonttitle=\bfseries\color{white},
+  boxrule=0.5mm
+}
+
+% Estilo para notas importantes
+\newtcolorbox{notebox}[1][]{%
+  enhanced,
+  colback=secondcolor!10!white,
+  colframe=secondcolor,
+  arc=0mm,
+  title=#1,
+  fonttitle=\bfseries\color{white},
+  boxrule=0.5mm
+}
+
+% Configuración de código
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{codeblue}{rgb}{0,0,0.8}
+\definecolor{backcolour}{rgb}{0.97,0.97,0.97}
+\definecolor{codeborder}{rgb}{0.8,0.8,0.8}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{codeblue}\bfseries,
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize\color{darkgray},
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2,
+    frame=single,
+    framesep=5pt,
+    framexleftmargin=5pt,
+    framexrightmargin=5pt,
+    framextopmargin=5pt,
+    framexbottommargin=5pt,
+    rulecolor=\color{codeborder}
+}
+
+\lstset{style=mystyle}
+
+% Configuración para listas
+\setlist[itemize]{leftmargin=*,label=\textcolor{maincolor}{$\bullet$}}
+\setlist[enumerate]{leftmargin=*,label=\textcolor{maincolor}{\arabic*.}}
+
+% Estilo para tablas
+\captionsetup[table]{labelfont={bf,color=maincolor},textfont={bf,color=darkgray},skip=5pt}
+\captionsetup[figure]{labelfont={bf,color=maincolor},textfont={bf,color=darkgray},skip=5pt}
+
+\begin{document}
+
+\begin{titlepage}
+    % Fondo con color corporativo en la parte superior
+    \begin{tikzpicture}[remember picture, overlay]
+        \fill[maincolor] (current page.north west) rectangle ([yshift=-8cm]current page.north east);
+        \fill[maincolor!30] ([yshift=-8cm]current page.north west) rectangle ([yshift=-8.5cm]current page.north east);
+        \node[anchor=north east, xshift=-2cm, yshift=-2cm] at (current page.north east) {\includegraphics[width=3cm]{images/Logo-upy.png}}; % Logo
+    \end{tikzpicture}
+    
+    \vspace*{3cm}
+    {\color{white}\huge\bfseries FireGuardian\par}
+    \vspace{0.5cm}
+    {\color{white}\Large Sistema Web de Gestión y Consulta de Extintores\par}
+    \vspace{4cm}
+    
+    \begin{center}
+        \begin{tcolorbox}[width=0.8\textwidth, colback=white, colframe=maincolor!30, arc=0mm, boxrule=1pt]
+            \centering
+            \LARGE\bfseries\textcolor{maincolor}{DOCUMENTO TÉCNICO}\par
+            \vspace{0.5cm}
+            \large\textcolor{darkgray}{Versión 1.0}\par
+        \end{tcolorbox}
+    \end{center}
+    
+    \vfill
+    
+    \begin{center}
+        \begin{tcolorbox}[width=0.8\textwidth, colback=white, colframe=maincolor!10, arc=0mm, boxrule=0.5pt]
+            \centering
+            \large\bfseries\textcolor{maincolor}{EQUIPO YCC EXTINTORES}\par
+            \vspace{0.3cm}
+            \normalsize\textcolor{darkgray}{Gómez Mendoza Jorman Daniel}\par
+            \normalsize\textcolor{darkgray}{Cetina Pool Raúl Abel}\par
+            \normalsize\textcolor{darkgray}{Quiñones Sánchez Christopher Germaine}\par
+            \vspace{0.5cm}
+            \normalsize\textit{Presentado a:}\par
+            \normalsize\textbf{Mtra. Sara Jeannette Carrillo Ruiz}\par
+        \end{tcolorbox}
+    \end{center}
+    
+    \vfill
+    
+    \begin{flushright}
+        \begin{tabular}{r l}
+            \textbf{Fecha:} & 03/08/2025 \\
+            \textbf{Clasificación:} & Confidencial \\
+            \textbf{Carrera:} & Ingeniería en Datos 5B \\
+        \end{tabular}
+    \end{flushright}
+    
+    \vspace{1cm}
+\end{titlepage}
+
+% Página para citas o frases inspiradoras
+\thispagestyle{empty}
+\begin{center}
+    \vspace*{\fill}
+    \begin{tcolorbox}[width=0.7\textwidth, colback=white, colframe=white, arc=0mm]
+        \begin{center}
+            \large\itshape "La seguridad no es un accidente, es una elección."\par
+            \vspace{0.5cm}
+            \normalsize\textcolor{darkgray}{--- FireGuardian ---}
+        \end{center}
+    \end{tcolorbox}
+    \vspace*{\fill}
+\end{center}
+\clearpage
+
+\tableofcontents
+\newpage
+
+\section{Descripción del Problema}
+
+En el ámbito de la seguridad contra incendios, la gestión eficiente de extintores es fundamental para garantizar la protección adecuada en cualquier instalación. Sin embargo, muchas organizaciones enfrentan desafíos significativos en este aspecto:
+
+\begin{itemize}
+    \item \textbf{Seguimiento manual y propenso a errores:} Los métodos tradicionales basados en papel o hojas de cálculo son ineficientes y susceptibles a errores humanos.
+    \item \textbf{Dificultad para mantener registros actualizados:} La información sobre ubicaciones, fechas de mantenimiento y vencimiento de extintores suele estar desactualizada.
+    \item \textbf{Falta de acceso inmediato a la información:} Los técnicos en campo no pueden consultar o actualizar datos en tiempo real.
+    \item \textbf{Ausencia de alertas automáticas:} No hay mecanismos para notificar sobre extintores próximos a vencer o que requieren mantenimiento.
+    \item \textbf{Reportes limitados:} Dificultad para generar informes detallados sobre el estado del inventario de extintores.
+\end{itemize}
+
+FireGuardian surge como solución a estos problemas, ofreciendo una plataforma web integral para la gestión de extintores que permite a las organizaciones mantener un control preciso sobre su inventario, programar mantenimientos, recibir alertas automáticas y generar reportes detallados, todo ello a través de una interfaz intuitiva y accesible desde cualquier dispositivo con conexión a internet.
+
+\section{Diseño de la Arquitectura de Información}
+
+FireGuardian implementa una arquitectura de información jerárquica y relacional que organiza los datos de manera lógica y accesible para diferentes tipos de usuarios. Esta estructura facilita la navegación y la recuperación eficiente de información.
+
+\subsection{Estructura de Datos Principal}
+
+La información en FireGuardian se organiza en las siguientes entidades principales:
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.9\textwidth]{images/tipos-de-extintores.png}
+    \caption{Clasificación de tipos de extintores en el sistema}
+    \label{fig:tipos-extintores}
+\end{figure}
+
+\begin{itemize}
+    \item \textbf{Extintores:} Elemento central del sistema, contiene información sobre cada extintor individual.
+    \item \textbf{Tipos de Extintores:} Categorización de extintores según sus características.
+    \item \textbf{Ubicaciones:} Jerarquía de localización donde se encuentran los extintores.
+    \item \textbf{Sedes:} Instalaciones o edificios que contienen ubicaciones.
+    \item \textbf{Mantenimientos:} Registro histórico de servicios realizados a cada extintor.
+    \item \textbf{Usuarios:} Personal con diferentes niveles de acceso al sistema.
+    \item \textbf{Logs:} Registro de actividades y cambios en el sistema.
+\end{itemize}
+
+\subsection{Relaciones entre Entidades}
+
+Las entidades se relacionan entre sí de la siguiente manera:
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.9\textwidth]{images/pantalla-sedes-ubicaciones.png}
+    \caption{Gestión de sedes y ubicaciones de extintores}
+    \label{fig:sedes-ubicaciones}
+\end{figure}
+
+\begin{itemize}
+    \item Cada \textbf{Extintor} pertenece a un \textbf{Tipo de Extintor} específico.
+    \item Los \textbf{Extintores} se encuentran en \textbf{Ubicaciones} específicas.
+    \item Las \textbf{Ubicaciones} pertenecen a \textbf{Sedes}.
+    \item Los \textbf{Mantenimientos} están asociados a \textbf{Extintores} específicos y son realizados por \textbf{Usuarios} con rol de técnico.
+    \item Todas las acciones importantes generan registros en \textbf{Logs}.
+\end{itemize}
+
+\subsection{Taxonomía y Clasificación}
+
+FireGuardian implementa un sistema de clasificación multifacético que permite filtrar y buscar extintores según diferentes criterios:
+
+\begin{itemize}
+    \item \textbf{Por tipo:} ABC, CO2, Agua, Espuma, Clase K, etc.
+    \item \textbf{Por estado:} Activo, Vencido, En mantenimiento, Baja.
+    \item \textbf{Por ubicación:} Organización jerárquica (Sede > Piso > Área).
+    \item \textbf{Por fecha de vencimiento:} Próximos a vencer, Vencidos, Al día.
+    \item \textbf{Por responsable:} Técnico asignado para su mantenimiento.
+\end{itemize}
+
+Esta estructura taxonómica facilita la navegación y recuperación de información según las necesidades específicas de cada usuario.
+
+\section{Diagrama de Navegación y Organización}
+
+La navegación en FireGuardian está diseñada para ser intuitiva y eficiente, permitiendo a los usuarios acceder rápidamente a la información que necesitan según su rol y responsabilidades.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.9\textwidth]{images/pantalla-gestion-usuarios.png}
+    \caption{Pantalla de gestión de usuarios en FireGuardian}
+    \label{fig:gestion-usuarios}
+\end{figure}
+
+\subsection{Estructura de Navegación Principal}
+
+El sistema implementa una navegación mixta que combina elementos jerárquicos y de red:
+
+\begin{itemize}
+    \item \textbf{Navegación Global:} Barra de navegación superior presente en todas las páginas.
+    \item \textbf{Navegación Contextual:} Opciones relacionadas con la página o elemento actual.
+    \item \textbf{Migas de Pan (Breadcrumbs):} Muestra la ruta de navegación actual y permite retroceder.
+    \item \textbf{Búsqueda Global:} Accesible desde cualquier página para localizar información rápidamente.
+\end{itemize}
+
+\subsection{Flujos de Usuario}
+
+Los principales flujos de navegación según el rol del usuario son:
+
+\textbf{Administrador:}
+\begin{enumerate}
+    \item Inicio de sesión → Dashboard → Gestión de usuarios/extintores/ubicaciones
+    \item Dashboard → Reportes → Generación/exportación de informes
+    \item Dashboard → Configuración del sistema
+\end{enumerate}
+
+\textbf{Técnico:}
+\begin{enumerate}
+    \item Inicio de sesión → Dashboard → Lista de extintores asignados
+    \item Dashboard → Registro de mantenimiento → Formulario de actualización
+    \item Dashboard → Calendario de mantenimientos programados
+\end{enumerate}
+
+\textbf{Usuario de Consulta:}
+\begin{enumerate}
+    \item Inicio de sesión → Dashboard → Visualización de extintores/reportes
+    \item Dashboard → Búsqueda de extintores → Detalles del extintor
+\end{enumerate}
+
+\section{Estructura de Metadatos}
+
+FireGuardian implementa un sistema robusto de metadatos para cada entidad principal, lo que permite una categorización detallada y facilita las búsquedas avanzadas.
+
+\subsection{Metadatos de Extintores}
+
+\begin{itemize}
+    \item \textbf{Identificación:} Código interno, número de serie, código QR
+    \item \textbf{Características:} Tipo, capacidad, agente extintor, clases de fuego
+    \item \textbf{Ubicación:} Sede, piso, área, coordenadas, referencias visuales
+    \item \textbf{Temporales:} Fecha de fabricación, instalación, último mantenimiento, próximo mantenimiento, vencimiento
+    \item \textbf{Estado:} Activo, vencido, en mantenimiento, baja
+    \item \textbf{Responsabilidad:} Técnico asignado, responsable del área
+\end{itemize}
+
+\subsection{Metadatos de Mantenimientos}
+
+\begin{itemize}
+    \item \textbf{Identificación:} ID de mantenimiento, extintor asociado
+    \item \textbf{Tipo:} Inspección, recarga, prueba hidrostática, reparación
+    \item \textbf{Temporales:} Fecha de realización, duración, próximo mantenimiento programado
+    \item \textbf{Responsabilidad:} Técnico que realizó el mantenimiento
+    \item \textbf{Resultados:} Estado resultante, observaciones, recomendaciones
+    \item \textbf{Documentación:} Fotografías, certificados, comprobantes
+\end{itemize}
+
+\subsection{Metadatos de Usuarios}
+
+\begin{itemize}
+    \item \textbf{Identificación:} ID, nombre, email
+    \item \textbf{Acceso:} Rol (admin, técnico, consulta), estado (activo/inactivo)
+    \item \textbf{Actividad:} Último acceso, historial de acciones
+\end{itemize}
+
+Esta estructura de metadatos permite implementar filtros avanzados y búsquedas personalizadas según múltiples criterios, facilitando la recuperación precisa de información.
+
+\section{Implementación Técnica}
+
+FireGuardian ha sido desarrollado utilizando tecnologías modernas y robustas para garantizar un rendimiento óptimo, seguridad y escalabilidad.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.9\textwidth]{images/pantalla-extintores.png}
+    \caption{Interfaz principal de gestión de extintores}
+    \label{fig:pantalla-extintores}
+\end{figure}
+
+\subsection{Stack Tecnológico}
+
+\begin{itemize}
+    \item \textbf{Frontend:} React.js, TypeScript, Tailwind CSS
+    \item \textbf{Backend:} Node.js, Express, TypeScript
+    \item \textbf{Base de Datos:} SQLite con TypeORM
+    \item \textbf{Autenticación:} JWT (JSON Web Tokens)
+    \item \textbf{Validación:} Middleware personalizado
+    \item \textbf{Generación de Reportes:} PDF.js
+\end{itemize}
+
+\subsection{Arquitectura del Sistema}
+
+FireGuardian implementa una arquitectura cliente-servidor con separación clara entre frontend y backend:
+
+\begin{itemize}
+    \item \textbf{Frontend:} Aplicación SPA (Single Page Application) que consume la API REST del backend.
+    \item \textbf{Backend:} API REST con endpoints organizados por funcionalidad.
+    \item \textbf{Middleware:} Capas para autenticación, validación y manejo de errores.
+    \item \textbf{Persistencia:} Capa de acceso a datos mediante TypeORM.
+\end{itemize}
+
+\subsection{Seguridad}
+
+El sistema implementa múltiples capas de seguridad:
+
+\begin{itemize}
+    \item \textbf{Autenticación:} Sistema basado en JWT con tokens de acceso.
+    \item \textbf{Autorización:} Control de acceso basado en roles (RBAC).
+    \item \textbf{Validación:} Sanitización de entradas para prevenir inyecciones.
+    \item \textbf{Encriptación:} Contraseñas hasheadas con bcrypt.
+    \item \textbf{HTTPS:} Comunicación cifrada entre cliente y servidor.
+\end{itemize}
+
+\section{Funcionalidades Principales}
+
+\subsection{Gestión de Extintores}
+
+\begin{itemize}
+    \item Registro de nuevos extintores con todos sus metadatos
+    \item Actualización de información y estado
+    \item Visualización detallada con historial de mantenimientos
+    \item Generación de etiquetas y códigos QR
+    \item Filtrado avanzado por múltiples criterios
+\end{itemize}
+
+\subsection{Gestión de Mantenimientos}
+
+\begin{itemize}
+    \item Programación de mantenimientos preventivos
+    \item Registro de mantenimientos correctivos
+    \item Seguimiento del historial completo por extintor
+    \item Notificaciones de mantenimientos pendientes
+    \item Reportes de actividades por técnico
+\end{itemize}
+
+\subsection{Sistema de Alertas}
+
+\begin{itemize}
+    \item Notificaciones de extintores próximos a vencer
+    \item Alertas de mantenimientos programados
+    \item Avisos de extintores en estado crítico
+    \item Dashboard con indicadores visuales de estado
+\end{itemize}
+
+\subsection{Reportes y Análisis}
+
+\begin{itemize}
+    \item Generación de reportes personalizables
+    \item Exportación en múltiples formatos (PDF, Excel)
+    \item Estadísticas de estado del inventario
+    \item Análisis de cumplimiento normativo
+    \item Historial completo de actividades
+\end{itemize}
+
+\section{Lecciones Aprendidas}
+
+El desarrollo de FireGuardian ha proporcionado valiosas lecciones en diversos aspectos del desarrollo de software y la arquitectura de información:
+
+\subsection{Arquitectura de Información}
+
+\begin{itemize}
+    \item \textbf{Importancia de la taxonomía:} Una clasificación bien definida facilita enormemente la navegación y recuperación de información.
+    \item \textbf{Balance entre profundidad y amplitud:} La estructura jerárquica debe equilibrar estos aspectos para evitar sobrecarga cognitiva.
+    \item \textbf{Metadatos como clave:} Un sistema robusto de metadatos es fundamental para implementar búsquedas avanzadas y filtros efectivos.
+\end{itemize}
+
+\subsection{Desarrollo Técnico}
+
+\begin{itemize}
+    \item \textbf{Consistencia en la nomenclatura:} Mantener nombres consistentes entre frontend y backend evita confusiones y errores.
+    \item \textbf{Validación robusta:} Implementar validación tanto en cliente como en servidor es crucial para la integridad de los datos.
+    \item \textbf{Manejo de estados:} La gestión adecuada del estado de la aplicación es fundamental para una experiencia fluida.
+    \item \textbf{Pruebas continuas:} La detección temprana de errores ahorra tiempo y recursos en etapas posteriores.
+\end{itemize}
+
+\subsection{Experiencia de Usuario}
+
+\begin{itemize}
+    \item \textbf{Feedback constante:} Mantener al usuario informado sobre el resultado de sus acciones mejora la usabilidad.
+    \item \textbf{Diseño responsivo:} Adaptar la interfaz a diferentes dispositivos amplía el alcance y utilidad del sistema.
+    \item \textbf{Accesibilidad:} Considerar aspectos de accesibilidad desde el inicio del diseño beneficia a todos los usuarios.
+\end{itemize}
+
+\section{Conclusiones}
+
+FireGuardian representa una solución integral al problema de la gestión de extintores, transformando un proceso tradicionalmente manual y propenso a errores en un sistema digital eficiente y confiable. La implementación de una arquitectura de información bien estructurada, combinada con tecnologías modernas de desarrollo web, ha resultado en una plataforma que no solo cumple con los requisitos funcionales sino que también ofrece una experiencia de usuario intuitiva y agradable.
+
+Los principios de organización jerárquica, etiquetado mediante metadatos y navegación intuitiva han sido fundamentales para crear un sistema que permite a usuarios con diferentes roles y necesidades acceder rápidamente a la información relevante para sus tareas. La capacidad de filtrar, buscar y generar reportes personalizados potencia la toma de decisiones basada en datos.
+
+Como todo sistema de información, FireGuardian continuará evolucionando para adaptarse a nuevas necesidades y tecnologías, pero la base sólida establecida en su arquitectura de información garantiza que estas evoluciones puedan implementarse de manera coherente y manteniendo la usabilidad del sistema.
+
+\end{document}

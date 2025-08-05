@@ -1,0 +1,17 @@
+Inicio del proceso: 2025-08-04T23:37:12.093Z
+
+Conectando a la base de datos...
+✅ Conexión establecida correctamente
+Iniciando población de la base de datos...
+Verificando tipos de extintores...
+❌ Error en SQL: SELECT COUNT(*) as count FROM tipos_extintores
+❌ Error: SQLITE_ERROR: no such table: tipos_extintores
+❌ Error al poblar la base de datos: SQLITE_ERROR: no such table: tipos_extintores
+Error: SQLITE_ERROR: no such table: tipos_extintores
+--> in Database#get('SELECT COUNT(*) as count FROM tipos_extintores', [], [Function (anonymous)])
+    at C:\Users\raulc\Documents\Proyecto YCC Extintores\fireguardian-app\backend\seed-with-log.js:56:8
+    at new Promise (<anonymous>)
+    at get (C:\Users\raulc\Documents\Proyecto YCC Extintores\fireguardian-app\backend\seed-with-log.js:55:10)
+    at seedDatabase (C:\Users\raulc\Documents\Proyecto YCC Extintores\fireguardian-app\backend\seed-with-log.js:119:31)
+    at Database.<anonymous> (C:\Users\raulc\Documents\Proyecto YCC Extintores\fireguardian-app\backend\seed-with-log.js:35:3)
+Conexión cerrada debido a error

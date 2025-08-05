@@ -1,0 +1,14 @@
+Conectando a la base de datos...
+
+❌ Error: Entity metadata for Usuario#logs was not found. Check if you specified a correct entity object and if it's connected in the connection options.
+TypeORMError: Entity metadata for Usuario#logs was not found. Check if you specified a correct entity object and if it's connected in the connection options.
+    at C:\Users\raulc\Documents\Proyecto YCC Extintores\fireguardian-app\backend\node_modules\typeorm\metadata-builder\EntityMetadataBuilder.js:733:23
+    at Array.forEach (<anonymous>)
+    at EntityMetadataBuilder.computeInverseProperties (C:\Users\raulc\Documents\Proyecto YCC Extintores\fireguardian-app\backend\node_modules\typeorm\metadata-builder\EntityMetadataBuilder.js:726:34)
+    at C:\Users\raulc\Documents\Proyecto YCC Extintores\fireguardian-app\backend\node_modules\typeorm\metadata-builder\EntityMetadataBuilder.js:86:58
+    at Array.forEach (<anonymous>)
+    at EntityMetadataBuilder.build (C:\Users\raulc\Documents\Proyecto YCC Extintores\fireguardian-app\backend\node_modules\typeorm\metadata-builder\EntityMetadataBuilder.js:86:25)
+    at ConnectionMetadataBuilder.buildEntityMetadatas (C:\Users\raulc\Documents\Proyecto YCC Extintores\fireguardian-app\backend\node_modules\typeorm\connection\ConnectionMetadataBuilder.js:66:150)
+    at async DataSource.buildMetadatas (C:\Users\raulc\Documents\Proyecto YCC Extintores\fireguardian-app\backend\node_modules\typeorm\data-source\DataSource.js:483:33)
+    at async DataSource.initialize (C:\Users\raulc\Documents\Proyecto YCC Extintores\fireguardian-app\backend\node_modules\typeorm\data-source\DataSource.js:145:13)
+    at async checkDatabase (C:\Users\raulc\Documents\Proyecto YCC Extintores\fireguardian-app\backend\check-data-to-file.js:46:24)

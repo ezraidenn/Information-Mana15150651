@@ -1,0 +1,87 @@
+Verificación de datos: 2025-08-04T23:40:07.264Z
+
+Conectando a la base de datos...
+✅ Conexión establecida correctamente
+Iniciando verificación de datos...
+
+=== RESUMEN DE TABLAS ===
+✅ Tabla sedes: 5 registros
+✅ Tabla ubicaciones: 35 registros
+✅ Tabla tipos_extintores: 5 registros
+✅ Tabla usuarios: 4 registros
+✅ Tabla extintores: 104 registros
+✅ Tabla mantenimientos: 214 registros
+✅ Tabla logs: 0 registros
+
+=== TIPOS DE EXTINTORES ===
+- ABC: Polvo Químico Seco ABC
+- CO2: Dióxido de Carbono
+- H2O: Agua a Presión
+- K: Clase K
+- AFFF: Espuma AFFF
+
+=== USUARIOS ===
+- ID 1: Administrador (admin@yccextintores.com) - Rol: admin, Activo: 1
+- ID 2: Carlos Rodríguez (carlos@yccextintores.com) - Rol: tecnico, Activo: 1
+- ID 3: Ana Martínez (ana@yccextintores.com) - Rol: tecnico, Activo: 1
+- ID 4: Roberto Sánchez (roberto@yccextintores.com) - Rol: consulta, Activo: 1
+
+=== SEDES ===
+- ID 1: Sede Principal (Av. Insurgentes Sur 1602, Ciudad de México)
+  * Ubicaciones: 7
+  * Extintores: 22
+- ID 2: Centro de Distribución Norte (Blvd. Manuel Ávila Camacho 2250, Tlalnepantla)
+  * Ubicaciones: 7
+  * Extintores: 21
+- ID 3: Oficinas Corporativas (Paseo de la Reforma 222, Ciudad de México)
+  * Ubicaciones: 7
+  * Extintores: 20
+- ID 4: Planta de Producción (Carretera Federal México-Puebla Km 15.5, Iztapalapa)
+  * Ubicaciones: 7
+  * Extintores: 17
+- ID 5: Centro Comercial (Av. Universidad 1000, Coyoacán, Ciudad de México)
+  * Ubicaciones: 7
+  * Extintores: 24
+
+=== DISTRIBUCIÓN DE EXTINTORES POR TIPO ===
+- AFFF (Espuma AFFF): 30 extintores
+- K (Clase K): 23 extintores
+- ABC (Polvo Químico Seco ABC): 20 extintores
+- H2O (Agua a Presión): 18 extintores
+- CO2 (Dióxido de Carbono): 13 extintores
+
+=== DISTRIBUCIÓN DE MANTENIMIENTOS POR TIPO ===
+- reparacion: 48 registros
+- incidente: 47 registros
+- recarga: 41 registros
+- reemplazo: 39 registros
+- inspeccion: 39 registros
+
+=== EXTINTORES PRÓXIMOS A VENCER (3 MESES) ===
+- EXT-2-3 (Espuma AFFF): Vence el 2025-08-04 - Sala de Juntas en Sede Principal
+- EXT-7-2 (Polvo Químico Seco ABC): Vence el 2025-08-04 - Almacén en Sede Principal
+- EXT-7-3 (Polvo Químico Seco ABC): Vence el 2025-08-04 - Almacén en Sede Principal
+- EXT-10-3 (Agua a Presión): Vence el 2025-08-04 - Oficina de Logística en Centro de Distribución Norte
+- EXT-14-2 (Clase K): Vence el 2025-08-04 - Estacionamiento en Centro de Distribución Norte
+- EXT-32-2 (Espuma AFFF): Vence el 2025-08-04 - Cines en Centro Comercial
+- EXT-3-4 (Polvo Químico Seco ABC): Vence el 2025-09-04 - Oficinas Administrativas en Sede Principal
+- EXT-10-1 (Clase K): Vence el 2025-09-04 - Oficina de Logística en Centro de Distribución Norte
+- EXT-16-3 (Clase K): Vence el 2025-09-04 - Sala de Conferencias en Oficinas Corporativas
+- EXT-21-2 (Clase K): Vence el 2025-09-04 - Terraza en Oficinas Corporativas
+
+=== ÚLTIMOS MANTENIMIENTOS REGISTRADOS ===
+- 2025-07-04: incidente al extintor EXT-2-1 por Ana Martínez
+- 2025-07-04: incidente al extintor EXT-6-3 por Ana Martínez
+- 2025-07-04: incidente al extintor EXT-7-2 por Ana Martínez
+- 2025-07-04: recarga al extintor EXT-8-3 por Ana Martínez
+- 2025-07-04: incidente al extintor EXT-11-1 por Ana Martínez
+- 2025-07-04: incidente al extintor EXT-15-2 por Carlos Rodríguez
+- 2025-07-04: reparacion al extintor EXT-25-3 por Ana Martínez
+- 2025-07-04: reemplazo al extintor EXT-32-2 por Ana Martínez
+- 2025-07-04: recarga al extintor EXT-34-2 por Ana Martínez
+- 2025-07-04: reparacion al extintor EXT-35-1 por Carlos Rodríguez
+
+✅✅✅ Verificación de datos completada
+Conexión cerrada
+
+Proceso completado: 2025-08-04T23:40:07.330Z

@@ -1,0 +1,29 @@
+{
+  "name": "fireguardian-app",
+  "version": "1.0.0",
+  "description": "Sistema inteligente de inventario de extintores industriales",
+  "main": "electron/main.js",
+  "author": "YCC Extintores",
+  "license": "MIT",
+  "homepage": "./",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\" \"wait-on http://localhost:3000 && npm run dev:electron\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:electron": "cd electron && npm run dev",
+    "build": "npm run build:frontend && npm run build:backend",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "cd backend && npm run build",
+    "build:electron": "npm run build && cd electron && npm run build",
+    "start": "cd electron && npm start",
+    "postinstall": "cd backend && npm install && cd ../frontend && npm install && cd ../electron && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "wait-on": "^7.2.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}
