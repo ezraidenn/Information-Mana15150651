@@ -18,7 +18,7 @@ echo ========================================
 echo  Aplicacion iniciada exitosamente!
 echo ========================================
 echo.
-echo Backend:  http://localhost:3001
+echo Backend:  http://localhost:3001/api
 echo Frontend: http://localhost:5173
 echo.
 echo Presiona cualquier tecla para continuar...

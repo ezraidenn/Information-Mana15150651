@@ -70,6 +70,11 @@ export class AuthController {
    */
   static async login(req: Request, res: Response): Promise<any> {
     try {
+      console.log('🔍 Login intento - Headers:', req.headers);
+      console.log('🔍 Login intento - IP:', req.ip);
+      console.log('🔍 Login intento - Método:', req.method);
+      console.log('🔍 Login intento - URL:', req.originalUrl);
+      
       const { email, password } = req.body;
       console.log('🔍 Login intento - Body recibido:', req.body);
 

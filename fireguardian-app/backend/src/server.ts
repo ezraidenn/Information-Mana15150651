@@ -21,9 +21,11 @@ import extintorRoutes from './routes/extintores';
 import usuarioRoutes from './routes/usuarios';
 import locationRoutes from './routes/locations';
 import tiposExtintoresRoutes from './routes/tipos-extintores';
+import mantenimientosRoutes from './routes/mantenimientos';
+import qrRoutes from './routes/qr';
 
 const app = express();
-const PORT = process.env.PORT || 3002;
+const PORT = process.env.PORT || 3001;
 
 // Configuración de rate limiting
 const limiter = rateLimit({
@@ -52,10 +54,11 @@ app.use(helmet({
 }));
 
 app.use(cors({
-  origin: '*', // Permitir cualquier origen durante desarrollo
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  origin: ['http://localhost:3000', 'http://192.168.56.1:3000', 'http://10.0.2.64:3000'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  credentials: true,  // Permite cookies en solicitudes cross-origin
+  maxAge: 86400  // Tiempo de caché para preflight requests (en segundos)
 }));
 
 app.use(compression());
@@ -98,9 +101,9 @@ app.get('/api/info', (req, res) => {
       usuarios: '/api/usuarios',
       ubicaciones: '/api/ubicaciones',
       sedes: '/api/sedes',
+      tipos_extintores: '/api/tipos-extintores',
       mantenimientos: '/api/mantenimientos',
-      reportes: '/api/reportes',
-      backup: '/api/backup'
+      qr: '/api/qr'
     }
   }));
 });
@@ -111,7 +114,9 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/extintores', extintorRoutes);
 app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/tipos-extintores', tiposExtintoresRoutes);
+app.use('/api/mantenimientos', mantenimientosRoutes);
 app.use('/api', locationRoutes); // Incluye /sedes y /ubicaciones
+app.use('/api/qr', qrRoutes); // Rutas para escaneo y generación de QR
 
 // Ruta temporal para desarrollo
 app.get('/api/test', (req, res) => {
@@ -174,10 +179,11 @@ const startServer = async () => {
     // Inicializar base de datos
     await initializeDatabase();
     
-    // Iniciar servidor
-    app.listen(PORT, () => {
-      console.log(`✅ Servidor ejecutándose en puerto ${PORT}`);
+    // Iniciar servidor - escuchar en todas las interfaces de red
+    app.listen(Number(PORT), '0.0.0.0', () => {
+      console.log(`✅ Servidor ejecutándose en puerto ${PORT} en todas las interfaces`);
       console.log(`🌐 API disponible en: http://localhost:${PORT}/api`);
+      console.log(`🌐 API disponible en la red local: http://<tu-ip-local>:${PORT}/api`);
       console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
       console.log(`📖 Info API: http://localhost:${PORT}/api/info`);
       

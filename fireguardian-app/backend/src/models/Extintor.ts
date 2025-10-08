@@ -12,6 +12,9 @@ export class Extintor {
   @Column({ type: 'text', unique: true, nullable: true })
   codigo_interno?: string; // Código físico/etiqueta opcional
 
+  @Column({ type: 'text', unique: true, nullable: true })
+  codigo_qr?: string; // Código QR único para identificación
+
   @Column({ type: 'text', nullable: false })
   tipo_id!: string;
 

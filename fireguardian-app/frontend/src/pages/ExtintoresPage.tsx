@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRevalidation } from '../contexts/RevalidationContext';
 import { toast } from 'react-hot-toast';
-import { FileText, Filter, Plus, Search, X } from 'lucide-react';
+import { FileText, Filter, Plus, Search, X, QrCode } from 'lucide-react';
 
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -10,12 +11,14 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { apiClient } from '../utils/api';
 import { Extintor, ExtintorFilters, ExtintorFormData } from '../types';
 import { ExtintorCard } from '../components/extintores/ExtintorCard';
+import { QRScanner } from '../components/qr/QRScanner';
 
 const ExtintoresPage: React.FC = () => {
   // Estado para el formulario y filtros
   const [showForm, setShowForm] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentExtintor, setCurrentExtintor] = useState<Extintor | null>(null);
+  const [showQRScanner, setShowQRScanner] = useState(false);
   
   // Estados para búsqueda y filtros
   const [searchTerm] = useState('');
@@ -40,6 +43,8 @@ const ExtintoresPage: React.FC = () => {
   // Estado para formulario
   const [formData, setFormData] = useState<ExtintorFormData>({
     codigo: '',
+    codigo_interno: '',
+    codigo_qr: '',
     tipo_id: '',
     ubicacion_id: 0,
     capacidad: '',
@@ -53,6 +58,7 @@ const ExtintoresPage: React.FC = () => {
   const [selectedSedeId, setSelectedSedeId] = useState<number | null>(null);
 
   const queryClient = useQueryClient();
+  const { invalidateQueries } = useRevalidation();
   
   // Función para actualizar los filtros
   const updateFilters = (newFilters: Partial<ExtintorFilters>) => {
@@ -86,7 +92,8 @@ const ExtintoresPage: React.FC = () => {
     refetchOnWindowFocus: false
   });
   
-  const extintores = extintoresData?.data || [];
+  // Asegurarnos de que extintores siempre sea un array
+  const extintores = Array.isArray(extintoresData?.data) ? extintoresData.data : [];
 
   const { data: tiposExtintores = [] } = useQuery({
     queryKey: ['tipos-extintores'],
@@ -119,6 +126,8 @@ const ExtintoresPage: React.FC = () => {
       setShowForm(false);
       resetForm();
       queryClient.invalidateQueries({ queryKey: ['extintores'] });
+      // Actualizar el dashboard cuando se crea un nuevo extintor
+      invalidateQueries(['dashboardStats', 'dashboardActivity', 'dashboardAlerts']);
     },
     onError: (error: any) => {
       console.error('Error al crear extintor:', error);
@@ -135,6 +144,8 @@ const ExtintoresPage: React.FC = () => {
       setShowForm(false);
       resetForm();
       queryClient.invalidateQueries({ queryKey: ['extintores'] });
+      // Actualizar el dashboard cuando se actualiza un extintor
+      invalidateQueries(['dashboardStats', 'dashboardActivity', 'dashboardAlerts']);
     },
     onError: (error: any) => {
       console.error('Error al actualizar extintor:', error);
@@ -148,6 +159,8 @@ const ExtintoresPage: React.FC = () => {
     onSuccess: () => {
       toast.success('Extintor eliminado correctamente');
       queryClient.invalidateQueries({ queryKey: ['extintores'] });
+      // Actualizar el dashboard cuando se elimina un extintor
+      invalidateQueries(['dashboardStats', 'dashboardActivity', 'dashboardAlerts']);
     },
     onError: (error: any) => {
       console.error('Error al eliminar extintor:', error);
@@ -158,6 +171,8 @@ const ExtintoresPage: React.FC = () => {
   const resetForm = () => {
     setFormData({
       codigo: '', // Este campo se usará como codigo_interno en el backend
+      codigo_interno: '',
+      codigo_qr: '',
       tipo_id: '',
       ubicacion_id: 0,
       capacidad: '',
@@ -209,6 +224,8 @@ const ExtintoresPage: React.FC = () => {
     
     setFormData({
       codigo: extintor.codigo || extintor.codigo_interno || '', // Usar codigo si existe, sino usar codigo_interno
+      codigo_interno: extintor.codigo_interno || '',
+      codigo_qr: extintor.codigo_qr || '',
       tipo_id: extintor.tipo_id,
       ubicacion_id: extintor.ubicacion_id,
       capacidad: extintor.capacidad || '',
@@ -223,8 +240,38 @@ const ExtintoresPage: React.FC = () => {
 
   // Función para manejar la eliminación de un extintor
   const handleDelete = (id: number) => {
-    if (window.confirm('¿Está seguro de eliminar este extintor?')) {
+    if (window.confirm('¿Estás seguro de que deseas eliminar este extintor?')) {
       deleteMutation.mutate(id);
+    }
+  };
+
+  // Función para manejar el resultado del escaneo QR
+  const handleQRScanSuccess = async (data: any) => {
+    try {
+      if (data.extintor) {
+        // Si se encontró un extintor con ese QR, abrir en modo edición
+        toast.success(`Extintor encontrado: ${data.extintor.codigo}`);
+        handleEdit(data.extintor);
+      } else {
+        // Si es un QR nuevo, abrir formulario para crear nuevo extintor
+        toast('Código QR nuevo detectado. Complete los datos del extintor.', {
+          icon: 'ℹ️',
+          duration: 4000
+        });
+        resetForm();
+        // Si el QR tiene un código sugerido, usarlo
+        if (data.codigo_sugerido) {
+          setFormData(prev => ({
+            ...prev,
+            codigo: data.codigo_sugerido,
+            codigo_qr: data.codigo_qr
+          }));
+        }
+        setShowForm(true);
+      }
+    } catch (error) {
+      console.error('Error al procesar resultado de QR:', error);
+      toast.error('Error al procesar el código QR');
     }
   };
 
@@ -285,17 +332,24 @@ const ExtintoresPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Extintores</h1>
-          <p className="text-gray-600 mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Extintores</h1>
+          <p className="text-gray-600 mt-1 text-sm sm:text-base">
             Gestiona el inventario de extintores ({extintores.length} total)
           </p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline">
-            <FileText className="mr-2 h-4 w-4" />
+        <div className="flex flex-wrap w-full sm:w-auto gap-2 sm:gap-3">
+          <Button variant="outline" className="text-xs sm:text-sm py-1 px-2 sm:py-2 sm:px-3 h-auto">
+            <FileText className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
             Exportar
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={() => setShowQRScanner(true)}
+            className="flex items-center text-xs sm:text-sm py-1 px-2 sm:py-2 sm:px-3 h-auto"
+          >
+            <QrCode size={12} className="mr-1 sm:mr-2 sm:size-4" /> Escanear QR
           </Button>
           <Button 
             onClick={() => {
@@ -303,9 +357,9 @@ const ExtintoresPage: React.FC = () => {
               resetForm();
               setShowForm(true);
             }}
+            className="text-xs sm:text-sm py-1 px-2 sm:py-2 sm:px-3 h-auto"
           >
-            <Plus className="mr-2 h-4 w-4" />
-            Nuevo Extintor
+            <Plus className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" /> Nuevo Extintor
           </Button>
         </div>
       </div>
@@ -319,18 +373,18 @@ const ExtintoresPage: React.FC = () => {
           </h3>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
             <div className="relative">
               <Input
                 placeholder="Buscar por código o ubicación..."
                 value={filters.search || ''}
                 onChange={(e) => updateFilters({ search: e.target.value })}
-                className="pl-10"
+                className="pl-10 text-sm h-9 sm:h-10"
               />
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             </div>
             <select 
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="px-3 py-1.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 h-9 sm:h-10"
               value={filterTipo}
               onChange={(e) => setFilterTipo(e.target.value)}
             >
@@ -342,7 +396,7 @@ const ExtintoresPage: React.FC = () => {
               ))}
             </select>
             <select 
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="px-3 py-1.5 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 h-9 sm:h-10"
               value={filterEstado}
               onChange={(e) => setFilterEstado(e.target.value)}
             >
@@ -357,14 +411,29 @@ const ExtintoresPage: React.FC = () => {
       </Card>
 
       {/* Información de total y paginación */}
-      <div className="flex justify-between items-center mb-4">
-        <div className="text-sm text-gray-600">
-          Mostrando {extintores.length} de {extintoresData?.total || 0} extintores
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0 mb-4">
+        <div className="text-xs sm:text-sm text-gray-600 w-full sm:w-auto">
+          Mostrando {extintores.length} de {extintoresData?.total || extintores.length} extintores
+        </div>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Button 
+            variant="outline" 
+            onClick={() => setShowQRScanner(true)}
+            className="flex items-center text-xs sm:text-sm py-1 px-2 sm:py-2 sm:px-3 h-auto flex-1 sm:flex-none"
+          >
+            <QrCode size={12} className="mr-1 sm:mr-2 sm:size-4" /> Escanear QR
+          </Button>
+          <Button 
+            onClick={() => { resetForm(); setShowForm(true); }}
+            className="text-xs sm:text-sm py-1 px-2 sm:py-2 sm:px-3 h-auto flex-1 sm:flex-none"
+          >
+            <Plus size={12} className="mr-1 sm:mr-2 sm:size-4" /> Nuevo Extintor
+          </Button>
         </div>
       </div>
 
       {/* Lista de Extintores */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
         {extintores.map((extintor: Extintor) => (
           <ExtintorCard 
             key={extintor.id}
@@ -376,43 +445,43 @@ const ExtintoresPage: React.FC = () => {
       </div>
       
       {/* Controles de paginación */}
-      {extintoresData?.totalPages && extintoresData.totalPages > 1 && (
-        <div className="flex justify-center mt-6">
-          <div className="flex items-center space-x-2">
+      {(extintoresData?.totalPages || 0) > 1 && (
+        <div className="flex justify-center mt-4 sm:mt-6">
+          <div className="flex items-center space-x-1 sm:space-x-2">
             <button
               onClick={() => handlePageChange(1)}
               disabled={currentPage === 1}
-              className={`px-3 py-1 rounded ${currentPage === 1 ? 'bg-gray-200 text-gray-500' : 'bg-red-600 text-white hover:bg-red-700'}`}
+              className={`px-2 sm:px-3 py-1 rounded text-xs sm:text-sm ${currentPage === 1 ? 'bg-gray-200 text-gray-500' : 'bg-red-600 text-white hover:bg-red-700'}`}
             >
               «
             </button>
             <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
-              className={`px-3 py-1 rounded ${currentPage === 1 ? 'bg-gray-200 text-gray-500' : 'bg-red-600 text-white hover:bg-red-700'}`}
+              className={`px-2 sm:px-3 py-1 rounded text-xs sm:text-sm ${currentPage === 1 ? 'bg-gray-200 text-gray-500' : 'bg-red-600 text-white hover:bg-red-700'}`}
             >
               ‹
             </button>
             
             {/* Números de página */}
-            {Array.from({ length: Math.min(5, extintoresData.totalPages) }, (_, i) => {
+            {Array.from({ length: Math.min(3, extintoresData?.totalPages || 1) }, (_, i) => {
               // Mostrar páginas alrededor de la actual
               let pageNum;
-              if (extintoresData.totalPages <= 5) {
+              if ((extintoresData?.totalPages || 1) <= 3) {
                 pageNum = i + 1;
-              } else if (currentPage <= 3) {
+              } else if (currentPage <= 2) {
                 pageNum = i + 1;
-              } else if (currentPage >= extintoresData.totalPages - 2) {
-                pageNum = extintoresData.totalPages - 4 + i;
+              } else if (currentPage >= (extintoresData?.totalPages || 1) - 1) {
+                pageNum = (extintoresData?.totalPages || 1) - 2 + i;
               } else {
-                pageNum = currentPage - 2 + i;
+                pageNum = currentPage - 1 + i;
               }
               
               return (
                 <button
                   key={pageNum}
                   onClick={() => handlePageChange(pageNum)}
-                  className={`px-3 py-1 rounded ${currentPage === pageNum ? 'bg-red-600 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                  className={`px-2 sm:px-3 py-1 rounded text-xs sm:text-sm ${currentPage === pageNum ? 'bg-red-600 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
                 >
                   {pageNum}
                 </button>
@@ -421,15 +490,15 @@ const ExtintoresPage: React.FC = () => {
             
             <button
               onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === extintoresData.totalPages}
-              className={`px-3 py-1 rounded ${currentPage === extintoresData.totalPages ? 'bg-gray-200 text-gray-500' : 'bg-red-600 text-white hover:bg-red-700'}`}
+              disabled={currentPage === (extintoresData?.totalPages || 1)}
+              className={`px-2 sm:px-3 py-1 rounded text-xs sm:text-sm ${currentPage === (extintoresData?.totalPages || 1) ? 'bg-gray-200 text-gray-500' : 'bg-red-600 text-white hover:bg-red-700'}`}
             >
               ›
             </button>
             <button
-              onClick={() => handlePageChange(extintoresData.totalPages)}
-              disabled={currentPage === extintoresData.totalPages}
-              className={`px-3 py-1 rounded ${currentPage === extintoresData.totalPages ? 'bg-gray-200 text-gray-500' : 'bg-red-600 text-white hover:bg-red-700'}`}
+              onClick={() => handlePageChange(extintoresData?.totalPages || 1)}
+              disabled={currentPage === (extintoresData?.totalPages || 1)}
+              className={`px-2 sm:px-3 py-1 rounded text-xs sm:text-sm ${currentPage === (extintoresData?.totalPages || 1) ? 'bg-gray-200 text-gray-500' : 'bg-red-600 text-white hover:bg-red-700'}`}
             >
               »
             </button>
@@ -465,6 +534,13 @@ const ExtintoresPage: React.FC = () => {
           </CardContent>
         </Card>
       )}
+      {showQRScanner && (
+        <QRScanner 
+          onScanSuccess={handleQRScanSuccess}
+          onClose={() => setShowQRScanner(false)}
+        />
+      )}
+      
       {showForm && (
         <>
           {/* Overlay que cubre toda la pantalla - corregido para cubrir completamente */}
@@ -476,9 +552,9 @@ const ExtintoresPage: React.FC = () => {
           
           {/* Modal - posicionado encima del overlay */}
           <div className="fixed inset-0 z-50 flex items-center justify-center p-0 m-0 overflow-hidden">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl p-4 relative mx-4">
-            <div className="flex justify-between items-center mb-3">
-              <h2 className="text-xl font-semibold text-gray-800">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl p-3 sm:p-4 relative mx-2 sm:mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-2 sm:mb-3">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-800">
                 {isEditing ? 'Editar Extintor' : 'Nuevo Extintor'}
               </h2>
               <button
@@ -489,11 +565,11 @@ const ExtintoresPage: React.FC = () => {
               </button>
             </div>
             
-            <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-x-4 gap-y-2">
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
               {/* Primera columna */}
               <div>
-                <div className="mb-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                <div className="mb-2 sm:mb-3">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-0.5 sm:mb-1">
                     Código
                     <span className="text-xs text-gray-500 ml-1">(se guardará como código interno)</span>
                   </label>
@@ -502,16 +578,30 @@ const ExtintoresPage: React.FC = () => {
                     onChange={(e) => setFormData({...formData, codigo: e.target.value})}
                     placeholder="EXT-001"
                     required
-                    className="focus:border-red-500 focus:ring-red-500"
+                    className="focus:border-red-500 focus:ring-red-500 text-sm h-9 sm:h-10"
                   />
                 </div>
                 
-                <div className="mb-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                <div className="mb-2 sm:mb-3">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-0.5 sm:mb-1">
+                    Código QR
+                    <span className="text-xs text-gray-500 ml-1">(generado por escaneo)</span>
+                  </label>
+                  <Input
+                    value={formData.codigo_qr || ''}
+                    onChange={(e) => setFormData({...formData, codigo_qr: e.target.value})}
+                    placeholder="QR-001"
+                    readOnly={!isEditing}
+                    className="focus:border-red-500 focus:ring-red-500 bg-gray-50 text-sm h-9 sm:h-10"
+                  />
+                </div>
+                
+                <div className="mb-2 sm:mb-3">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-0.5 sm:mb-1">
                     Tipo de Extintor
                   </label>
                   <select
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="w-full px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-sm h-9 sm:h-10"
                     value={formData.tipo_id}
                     onChange={(e) => setFormData({...formData, tipo_id: e.target.value})}
                     required
@@ -525,12 +615,12 @@ const ExtintoresPage: React.FC = () => {
                   </select>
                 </div>
                 
-                <div className="mb-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                <div className="mb-2 sm:mb-3">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-0.5 sm:mb-1">
                     Sede
                   </label>
                   <select
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="w-full px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-sm h-9 sm:h-10"
                     value={selectedSedeId || ''}
                     onChange={(e) => {
                       const sedeId = e.target.value ? parseInt(e.target.value) : null;
@@ -549,12 +639,12 @@ const ExtintoresPage: React.FC = () => {
                   </select>
                 </div>
                 
-                <div className="mb-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                <div className="mb-2 sm:mb-3">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-0.5 sm:mb-1">
                     Ubicación
                   </label>
                   <select
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="w-full px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-sm h-9 sm:h-10"
                     value={formData.ubicacion_id}
                     onChange={(e) => setFormData({...formData, ubicacion_id: parseInt(e.target.value)})}
                     disabled={!selectedSedeId}
@@ -572,8 +662,8 @@ const ExtintoresPage: React.FC = () => {
               
               {/* Segunda columna */}
               <div>
-                <div className="mb-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                <div className="mb-2 sm:mb-3">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-0.5 sm:mb-1">
                     Fecha de Vencimiento
                   </label>
                   <Input
@@ -581,15 +671,16 @@ const ExtintoresPage: React.FC = () => {
                     value={formData.fecha_vencimiento}
                     onChange={(e) => setFormData({...formData, fecha_vencimiento: e.target.value})}
                     required
+                    className="text-sm h-9 sm:h-10"
                   />
                 </div>
 
-                <div className="mb-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                <div className="mb-2 sm:mb-3">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-0.5 sm:mb-1">
                     Estado del Extintor
                   </label>
                   <select
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="w-full px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-sm h-9 sm:h-10"
                     value={formData.estado || 'ACTIVO'}
                     onChange={(e) => setFormData({...formData, estado: e.target.value as 'ACTIVO' | 'MANTENIMIENTO' | 'VENCIDO' | 'BAJA'})}
                     required
@@ -601,32 +692,33 @@ const ExtintoresPage: React.FC = () => {
                   </select>
                 </div>
                     
-                <div className="mb-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                <div className="mb-2 sm:mb-3">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-0.5 sm:mb-1">
                     Observaciones
                   </label>
                   <textarea
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="w-full px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
                     rows={3}
-                    value={formData.observaciones}
+                    value={formData.observaciones || ''}
                     onChange={(e) => setFormData({...formData, observaciones: e.target.value})}
-                    placeholder="Observaciones adicionales..."
-                  />
+                  ></textarea>
                 </div>
               </div>
               
               {/* Botones de acción - ocupan todo el ancho */}
-              <div className="col-span-2 flex justify-end gap-3 pt-3 border-t border-gray-200 mt-2">
+              <div className="col-span-1 sm:col-span-2 flex justify-end gap-2 sm:gap-3 pt-2 sm:pt-3 border-t border-gray-200 mt-1 sm:mt-2">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setShowForm(false)}
+                  className="text-xs sm:text-sm py-1 sm:py-2 px-2 sm:px-4 h-8 sm:h-10"
                 >
                   Cancelar
                 </Button>
                 <Button
                   type="submit"
                   loading={createMutation.isPending || updateMutation.isPending}
+                  className="text-xs sm:text-sm py-1 sm:py-2 px-2 sm:px-4 h-8 sm:h-10"
                 >
                   {isEditing ? 'Actualizar' : 'Crear'}
                 </Button>
@@ -635,6 +727,14 @@ const ExtintoresPage: React.FC = () => {
             </div>
           </div>
         </>
+      )}
+
+      {/* Componente QR Scanner */}
+      {showQRScanner && (
+        <QRScanner
+          onClose={() => setShowQRScanner(false)}
+          onScanSuccess={handleQRScanSuccess}
+        />
       )}
     </div>
   );

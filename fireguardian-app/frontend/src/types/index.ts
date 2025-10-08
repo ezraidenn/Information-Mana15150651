@@ -46,6 +46,36 @@ export interface Ubicacion {
   actualizado_en: string;
 }
 
+// Tipos de mantenimiento
+export interface Mantenimiento {
+  id: number;
+  extintor_id: number;
+  extintor_codigo?: string;
+  extintor_ubicacion?: string;
+  tipo: 'PREVENTIVO' | 'CORRECTIVO' | 'RECARGA' | 'PRUEBA_HIDROSTATICA';
+  fecha_mantenimiento: string;
+  fecha_proxima: string;
+  tecnico_id?: number;
+  tecnico?: string;
+  observaciones: string;
+  costo?: number;
+  estado: 'COMPLETADO' | 'PENDIENTE' | 'EN_PROCESO';
+  creado_por?: string;
+  created_at?: string;
+  updated_at?: string;
+  evidencia?: string;
+}
+
+export interface MantenimientoFormData {
+  extintor_id: number;
+  tipo: string;
+  fecha_mantenimiento: string;
+  fecha_proxima: string;
+  observaciones: string;
+  costo?: number;
+  evidencia?: File;
+}
+
 // Tipos de extintor
 export interface TipoExtintor {
   id: string;
@@ -72,6 +102,7 @@ export interface Extintor {
   id: number;
   codigo: string;
   codigo_interno?: string;
+  codigo_qr?: string;
   tipo_id: string;
   descripcion?: string;
   ubicacion_id: number;
@@ -101,8 +132,8 @@ export interface Extintor {
   ubicacion_completa?: string;
 }
 
-// Tipos de mantenimiento
-export interface Mantenimiento {
+// Tipos para eventos de mantenimiento
+export interface EventoMantenimiento {
   id: number;
   extintor_id: number;
   fecha: string;
@@ -329,6 +360,20 @@ export interface TimeSeriesData {
   date: string;
   value: number;
   category?: string;
+}
+
+// Tipos para formularios
+export interface ExtintorFormData {
+  codigo: string;
+  codigo_interno?: string;
+  codigo_qr?: string;
+  tipo_id: string;
+  ubicacion_id: number;
+  capacidad?: string;
+  fecha_vencimiento: string;
+  fecha_recarga?: string;
+  observaciones?: string;
+  estado?: 'ACTIVO' | 'MANTENIMIENTO' | 'VENCIDO' | 'BAJA';
 }
 
 // Tipos para exportación

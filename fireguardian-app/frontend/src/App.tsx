@@ -8,13 +8,14 @@ import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { ThemeProvider } from '@/theme/ThemeContext';
 import ThemeApplier from '@/theme/ThemeApplier';
 import { TooltipProvider } from './contexts/TooltipContext';
+import { RevalidationProvider } from './contexts/RevalidationContext';
 
 // Importar estilos globales
 import '@/theme/global.css';
 
 // Lazy loading de componentes para optimizar el bundle
 const LoginPage = lazy(() => import('@/pages/LoginPage'));
-const DashboardPage = lazy(() => import('@/pages/DashboardPage'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const ExtintoresPage = lazy(() => import('@/pages/ExtintoresPage'));
 const ExtintorDetailPage = lazy(() => import('@/pages/ExtintorDetailPage'));
 const TiposExtintoresPage = lazy(() => import('@/pages/TiposExtintoresPage'));
@@ -109,68 +110,70 @@ const App: React.FC = () => {
       <ThemeProvider>
         <QueryProvider>
           <AuthProvider>
-            <TooltipProvider>
-              <Router>
-              {/* Aplicador de tema que configura las variables CSS */}
-              <ThemeApplier />
-              
-              <div className="min-h-screen bg-bg-default">
-                <AppRoutes />
-                
-                {/* Toaster para notificaciones */}
-                <Toaster
-                  position="top-right"
-                  reverseOrder={false}
-                  gutter={8}
-                  containerClassName=""
-                  containerStyle={{}}
-                  toastOptions={{
-                    // Configuración por defecto
-                    duration: 4000,
-                    style: {
-                      background: 'var(--color-bg-paper)',
-                      color: 'var(--color-text-primary)',
-                      boxShadow: 'var(--shadow-md)',
-                      borderRadius: 'var(--border-radius-lg)',
-                      border: '1px solid var(--color-border-light)',
-                      fontSize: '0.875rem',
-                      fontWeight: '500',
-                      padding: '12px 16px',
-                    },
+            <RevalidationProvider>
+              <TooltipProvider>
+                <Router>
+                  {/* Aplicador de tema que configura las variables CSS */}
+                  <ThemeApplier />
+                  
+                  <div className="min-h-screen bg-bg-default">
+                    <AppRoutes />
                     
-                    // Estilos para diferentes tipos
-                    success: {
-                      iconTheme: {
-                        primary: 'var(--color-status-success)',
-                        secondary: '#fff',
-                      },
-                      style: {
-                        borderLeft: '4px solid var(--color-status-success)',
-                      },
-                    },
-                    error: {
-                      iconTheme: {
-                        primary: 'var(--color-status-error)',
-                        secondary: '#fff',
-                      },
-                      style: {
-                        borderLeft: '4px solid var(--color-status-error)',
-                      },
-                    },
-                    loading: {
-                      iconTheme: {
-                        primary: 'var(--color-status-info)',
-                        secondary: '#fff',
-                      },
-                      style: {
-                        borderLeft: '4px solid var(--color-status-info)',
-                      },
-                    },
-                  }}
-                />
-              </div>
-            </Router>
-            </TooltipProvider>
+                    {/* Toaster para notificaciones */}
+                    <Toaster
+                      position="top-right"
+                      reverseOrder={false}
+                      gutter={8}
+                      containerClassName=""
+                      containerStyle={{}}
+                      toastOptions={{
+                        // Configuración por defecto
+                        duration: 4000,
+                        style: {
+                          background: 'var(--color-bg-paper)',
+                          color: 'var(--color-text-primary)',
+                          boxShadow: 'var(--shadow-md)',
+                          borderRadius: 'var(--border-radius-lg)',
+                          border: '1px solid var(--color-border-light)',
+                          fontSize: '0.875rem',
+                          fontWeight: '500',
+                          padding: '12px 16px',
+                        },
+                        
+                        // Estilos para diferentes tipos
+                        success: {
+                          iconTheme: {
+                            primary: 'var(--color-status-success)',
+                            secondary: '#fff',
+                          },
+                          style: {
+                            borderLeft: '4px solid var(--color-status-success)',
+                          },
+                        },
+                        error: {
+                          iconTheme: {
+                            primary: 'var(--color-status-error)',
+                            secondary: '#fff',
+                          },
+                          style: {
+                            borderLeft: '4px solid var(--color-status-error)',
+                          },
+                        },
+                        loading: {
+                          iconTheme: {
+                            primary: 'var(--color-status-info)',
+                            secondary: '#fff',
+                          },
+                          style: {
+                            borderLeft: '4px solid var(--color-status-info)',
+                          },
+                        },
+                      }}
+                    />
+                  </div>
+                </Router>
+              </TooltipProvider>
+            </RevalidationProvider>
           </AuthProvider>
         </QueryProvider>
       </ThemeProvider>

@@ -77,18 +77,19 @@ const ConfiguracionPage: React.FC = () => {
                 </motion.div>
               )}
               
-              {/* Otros enlaces de configuración (futuros) */}
-              <div className="flex items-center p-4 bg-bg-paper rounded-lg border border-secondary-light">
-                <div className="p-3 rounded-full bg-secondary-light text-secondary-dark mr-4">
+              {/* Otros enlaces de configuración (futuros) - Deshabilitado */}
+              <div className="flex items-center p-4 bg-bg-paper rounded-lg border border-secondary-light opacity-60 cursor-not-allowed relative">
+                <div className="p-3 rounded-full bg-gray-200 text-gray-500 mr-4">
                   <Database size={24} />
                 </div>
                 
                 <div className="flex-1">
-                  <h3 className="font-medium text-lg text-text-primary">Configuración General</h3>
-                  <p className="text-text-secondary mt-1">
+                  <h3 className="font-medium text-lg text-gray-500">Configuración General</h3>
+                  <p className="text-gray-400 mt-1">
                     Próximamente: Ajustes generales del sistema
                   </p>
                 </div>
+                <span className="absolute top-2 right-2 text-xs bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded">Próximamente</span>
               </div>
             </div>
           </CardContent>

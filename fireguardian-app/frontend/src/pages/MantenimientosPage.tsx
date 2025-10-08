@@ -9,50 +9,26 @@ import { Input } from '../components/ui/Input';
 import { Card, CardHeader, CardContent } from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRevalidation } from '../contexts/RevalidationContext';
 import { apiClient } from '../utils/api';
 import toast from 'react-hot-toast';
+import { Mantenimiento, MantenimientoFormData } from '../types';
 
-interface Mantenimiento {
-  id: number;
-  extintor_codigo: string;
-  extintor_ubicacion: string;
-  tipo: 'PREVENTIVO' | 'CORRECTIVO' | 'RECARGA' | 'PRUEBA_HIDROSTATICA';
-  fecha_mantenimiento: string;
-  fecha_proxima: string;
-  tecnico: string;
-  observaciones: string;
-  costo?: number;
-  estado: 'COMPLETADO' | 'PENDIENTE' | 'EN_PROCESO';
-  creado_por: string;
-  created_at: string;
-}
+// Usando los tipos importados desde '../types'
 
-interface MantenimientoFormData {
-  extintor_id: number;
-  tipo: string;
-  fecha_mantenimiento: string;
-  fecha_proxima: string;
-  observaciones: string;
-  costo?: number;
-}
-
-const MantenimientosPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterTipo, setFilterTipo] = useState('');
   const [filterEstado, setFilterEstado] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingMantenimiento, setEditingMantenimiento] = useState<Mantenimiento | null>(null);
-  const [formData, setFormData] = useState<MantenimientoFormData>({
+  const [formData, setFormData] = useState<LocalMantenimientoFormData>({
     extintor_id: 0,
-    tipo: '',
-    fecha_mantenimiento: '',
-    fecha_proxima: '',
-    observaciones: '',
-    costo: 0
+    tipo_evento: 'inspeccion',
+    fecha: '',
+    descripcion: ''
   });
 
   const queryClient = useQueryClient();
-
+  const { invalidateQueries } = useRevalidation();
   // Queries
   const { data: mantenimientos = [], isLoading, error } = useQuery({
     queryKey: ['mantenimientos', searchTerm, filterTipo, filterEstado],
@@ -64,16 +40,21 @@ const MantenimientosPage: React.FC = () => {
     refetchInterval: 30000
   });
 
-  const { data: extintores = [] } = useQuery({
+  const { data: extintoresResponse } = useQuery({
     queryKey: ['extintores-select'],
     queryFn: () => apiClient.getExtintores({})
   });
+
+  // Extraer el array de extintores de la respuesta paginada
+  const extintores = extintoresResponse?.data || [];
 
   // Mutations
   const createMutation = useMutation({
     mutationFn: (data: MantenimientoFormData) => apiClient.createMantenimiento(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mantenimientos'] });
+      // Actualizar el dashboard cuando se crea un nuevo mantenimiento
+      invalidateQueries(['dashboardStats', 'dashboardActivity', 'dashboardAlerts']);
       toast.success('Mantenimiento registrado exitosamente');
       setShowForm(false);
       resetForm();
@@ -88,6 +69,8 @@ const MantenimientosPage: React.FC = () => {
       apiClient.updateMantenimiento(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mantenimientos'] });
+      // Actualizar el dashboard cuando se actualiza un mantenimiento
+      invalidateQueries(['dashboardStats', 'dashboardActivity', 'dashboardAlerts']);
       toast.success('Mantenimiento actualizado exitosamente');
       setShowForm(false);
       setEditingMantenimiento(null);
@@ -102,6 +85,8 @@ const MantenimientosPage: React.FC = () => {
     mutationFn: (id: number) => apiClient.deleteMantenimiento(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mantenimientos'] });
+      // Actualizar el dashboard cuando se elimina un mantenimiento
+      invalidateQueries(['dashboardStats', 'dashboardActivity', 'dashboardAlerts']);
       toast.success('Mantenimiento eliminado exitosamente');
     },
     onError: (error: any) => {
@@ -112,23 +97,20 @@ const MantenimientosPage: React.FC = () => {
   const resetForm = () => {
     setFormData({
       extintor_id: 0,
-      tipo: '',
-      fecha_mantenimiento: '',
-      fecha_proxima: '',
-      observaciones: '',
-      costo: 0
+      tipo_evento: 'inspeccion',
+      fecha: '',
+      descripcion: ''
     });
   };
 
   const handleEdit = (mantenimiento: Mantenimiento) => {
     setEditingMantenimiento(mantenimiento);
     setFormData({
-      extintor_id: 1, // Temporal, necesitaríamos el ID real
-      tipo: mantenimiento.tipo,
-      fecha_mantenimiento: mantenimiento.fecha_mantenimiento,
-      fecha_proxima: mantenimiento.fecha_proxima,
-      observaciones: mantenimiento.observaciones,
-      costo: mantenimiento.costo || 0
+      extintor_id: mantenimiento.extintor_id,
+      tipo_evento: mantenimiento.tipo.toLowerCase() as any, // Convertir a minúsculas
+      fecha: mantenimiento.fecha_mantenimiento,
+      descripcion: mantenimiento.observaciones,
+      tecnico_id: mantenimiento.tecnico_id
     });
     setShowForm(true);
   };
@@ -149,30 +131,34 @@ const MantenimientosPage: React.FC = () => {
   };
 
   const getTipoColor = (tipo: string) => {
-    switch (tipo) {
-      case 'PREVENTIVO': return 'text-blue-600 bg-blue-100';
-      case 'CORRECTIVO': return 'text-red-600 bg-red-100';
+    const tipoUpper = tipo.toUpperCase();
+    switch (tipoUpper) {
+      case 'INSPECCION': return 'text-blue-600 bg-blue-100';
       case 'RECARGA': return 'text-green-600 bg-green-100';
-      case 'PRUEBA_HIDROSTATICA': return 'text-purple-600 bg-purple-100';
+      case 'REPARACION': return 'text-orange-600 bg-orange-100';
+      case 'INCIDENTE': return 'text-red-600 bg-red-100';
+      case 'REEMPLAZO': return 'text-purple-600 bg-purple-100';
       default: return 'text-gray-600 bg-gray-100';
     }
   };
 
   const getEstadoColor = (estado: string) => {
-    switch (estado) {
+    const estadoUpper = estado?.toUpperCase() || 'COMPLETADO';
+    switch (estadoUpper) {
       case 'COMPLETADO': return 'text-green-600 bg-green-100';
       case 'EN_PROCESO': return 'text-yellow-600 bg-yellow-100';
       case 'PENDIENTE': return 'text-red-600 bg-red-100';
-      default: return 'text-gray-600 bg-gray-100';
+      default: return 'text-green-600 bg-green-100';
     }
   };
 
   const getEstadoIcon = (estado: string) => {
-    switch (estado) {
+    const estadoUpper = estado?.toUpperCase() || 'COMPLETADO';
+    switch (estadoUpper) {
       case 'COMPLETADO': return CheckCircle;
       case 'EN_PROCESO': return Clock;
       case 'PENDIENTE': return AlertTriangle;
-      default: return AlertTriangle;
+      default: return CheckCircle;
     }
   };
 
@@ -215,11 +201,11 @@ const MantenimientosPage: React.FC = () => {
           </p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" icon={FileText}>
+          <Button variant="outline" leftIcon={<FileText className="h-4 w-4" />}>
             Exportar
           </Button>
-          <Button 
-            icon={Plus}
+          <Button
+            leftIcon={<Plus className="h-4 w-4" />}
             onClick={() => {
               setEditingMantenimiento(null);
               resetForm();
@@ -241,12 +227,15 @@ const MantenimientosPage: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Input
-              placeholder="Buscar por extintor o técnico..."
-              icon={Search}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Buscar por extintor o técnico..."
+                className="pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
             <select 
               className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={filterTipo}
@@ -309,11 +298,11 @@ const MantenimientosPage: React.FC = () => {
                   <div className="space-y-2 mb-4">
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Calendar className="w-4 h-4" />
-                      Realizado: {new Date(mantenimiento.fecha_mantenimiento).toLocaleDateString()}
+                      <span className="text-sm font-medium">{mantenimiento.fecha_mantenimiento ? new Date(mantenimiento.fecha_mantenimiento).toLocaleDateString() : 'Sin fecha'}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Clock className="w-4 h-4" />
-                      Próximo: {new Date(mantenimiento.fecha_proxima).toLocaleDateString()}
+                      Próximo: {mantenimiento.fecha_proxima ? new Date(mantenimiento.fecha_proxima).toLocaleDateString() : 'Sin fecha'}
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <User className="w-4 h-4" />
@@ -337,21 +326,21 @@ const MantenimientosPage: React.FC = () => {
 
                   <div className="flex justify-between items-center pt-4 border-t border-gray-100">
                     <span className="text-xs text-gray-500">
-                      Por: {mantenimiento.creado_por} • {new Date(mantenimiento.created_at).toLocaleDateString()}
+                      Por: {mantenimiento.creado_por || 'Sistema'} • {mantenimiento.created_at ? new Date(mantenimiento.created_at).toLocaleDateString() : 'Fecha desconocida'}
                     </span>
                     <div className="flex gap-2">
                       <Button
                         variant="outline"
                         size="sm"
-                        icon={Eye}
-                        onClick={() => window.open(`/mantenimientos/${mantenimiento.id}`, '_blank')}
+                        leftIcon={<Eye className="h-4 w-4" />}
+                        onClick={() => window.open(`/evidencia/${mantenimiento.id}`, '_blank')}
                       >
-                        Ver
+                        Ver Evidencia
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
-                        icon={Edit}
+                        leftIcon={<Edit className="h-4 w-4" />}
                         onClick={() => handleEdit(mantenimiento)}
                       >
                         Editar
@@ -359,9 +348,9 @@ const MantenimientosPage: React.FC = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        icon={Trash2}
+                        leftIcon={<Trash2 className="h-4 w-4" />}
                         onClick={() => handleDelete(mantenimiento.id)}
-                        className="text-red-600 hover:text-red-700"
+                        className="text-red-600 hover:bg-red-50"
                       >
                         Eliminar
                       </Button>

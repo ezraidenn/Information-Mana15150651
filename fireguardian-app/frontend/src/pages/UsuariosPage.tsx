@@ -9,6 +9,7 @@ import { Input } from '../components/ui/Input';
 import { Card, CardHeader, CardContent } from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRevalidation } from '../contexts/RevalidationContext';
 import { apiClient } from '../utils/api';
 import toast from 'react-hot-toast';
 
@@ -44,6 +45,7 @@ const UsuariosPage: React.FC = () => {
   
   // Acceso al cliente de consulta para invalidar consultas
   const queryClient = useQueryClient();
+  const { invalidateQueries } = useRevalidation();
   
   // Consulta para obtener usuarios con filtros
   const { data: usuarios, isLoading, isError } = useQuery({
@@ -87,6 +89,8 @@ const UsuariosPage: React.FC = () => {
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['usuarios'] });
+      // Actualizar el dashboard cuando se crea un nuevo usuario
+      invalidateQueries(['dashboardStats', 'dashboardActivity', 'dashboardAlerts']);
       toast.success('Usuario creado correctamente');
       setShowForm(false);
       resetForm();
@@ -102,6 +106,8 @@ const UsuariosPage: React.FC = () => {
       apiClient.updateUsuario(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['usuarios'] });
+      // Actualizar el dashboard cuando se actualiza un usuario
+      invalidateQueries(['dashboardStats', 'dashboardActivity', 'dashboardAlerts']);
       toast.success('Usuario actualizado correctamente');
       setShowForm(false);
       resetForm();
@@ -117,6 +123,8 @@ const UsuariosPage: React.FC = () => {
       apiClient.changeUserPassword(id, password),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['usuarios'] });
+      // Actualizar el dashboard cuando se cambia la contraseña de un usuario
+      invalidateQueries(['dashboardStats', 'dashboardActivity', 'dashboardAlerts']);
       toast.success('Contraseña cambiada correctamente');
       setShowPasswordDialog(false);
       setNewPassword('');
@@ -131,7 +139,9 @@ const UsuariosPage: React.FC = () => {
     mutationFn: (id: number) => apiClient.toggleUserActive(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['usuarios'] });
-      toast.success('Estado de usuario actualizado correctamente');
+      // Actualizar el dashboard cuando se activa/desactiva un usuario
+      invalidateQueries(['dashboardStats', 'dashboardActivity', 'dashboardAlerts']);
+      toast.success(`Usuario ${selectedUser?.activo ? 'desactivado' : 'activado'} correctamente`);
     },
     onError: (error: any) => {
       toast.error(`Error al cambiar estado: ${error.message || 'Desconocido'}`);
@@ -143,6 +153,8 @@ const UsuariosPage: React.FC = () => {
     mutationFn: (id: number) => apiClient.deleteUsuario(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['usuarios'] });
+      // Actualizar el dashboard cuando se elimina un usuario
+      invalidateQueries(['dashboardStats', 'dashboardActivity', 'dashboardAlerts']);
       toast.success('Usuario eliminado correctamente');
       setShowDeleteDialog(false);
       setSelectedUser(null);

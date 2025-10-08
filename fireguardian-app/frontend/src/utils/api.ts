@@ -21,16 +21,23 @@ import {
 import { storageUtils } from './index';
 import toast from 'react-hot-toast';
 
-// Configuración base de la API
+// Configuración base de la API con fallbacks
 const API_BASE_URL = import.meta.env.VITE_API_URL;
+const API_FALLBACK_URLS = [
+  import.meta.env.VITE_API_URL_FALLBACK_1,
+  import.meta.env.VITE_API_URL_FALLBACK_2
+].filter(Boolean); // Filtrar valores undefined o vacíos
 
 class ApiClient {
   private client: AxiosInstance;
   private token: string | null = null;
 
+  private currentUrlIndex = 0;
+  private apiUrls: string[] = [API_BASE_URL, ...API_FALLBACK_URLS];
+
   constructor() {
     this.client = axios.create({
-      baseURL: `${API_BASE_URL}/api`,
+      baseURL: `${this.apiUrls[0]}/api`,
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
@@ -80,6 +87,15 @@ class ApiClient {
    * Manejar errores de la API
    */
   private handleApiError(error: AxiosError<ApiResponse>): void {
+    // Si es un error de red, intentar con la siguiente URL
+    if (!error.response && this.currentUrlIndex < this.apiUrls.length - 1) {
+      this.currentUrlIndex++;
+      const newBaseUrl = `${this.apiUrls[this.currentUrlIndex]}/api`;
+      this.client.defaults.baseURL = newBaseUrl;
+      console.log(`Intentando conectar con URL alternativa: ${newBaseUrl}`);
+      return;
+    }
+    
     if (error.response?.status === 401) {
       // Token expirado o inválido
       this.clearAuth();
@@ -134,13 +150,29 @@ class ApiClient {
    * Iniciar sesión
    */
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    const response = await this.client.post<ApiResponse<AuthResponse>>('/auth/login', credentials);
-    const authData = response.data.data!;
-    
-    this.setAuthToken(authData.token);
-    storageUtils.set('user_data', authData.user);
-    
-    return authData;
+    try {
+      const response = await this.client.post<ApiResponse<AuthResponse>>('/auth/login', credentials);
+      const authData = response.data.data!;
+      
+      this.setAuthToken(authData.token);
+      storageUtils.set('user_data', authData.user);
+      
+      return authData;
+    } catch (error: any) {
+      // Si es un error de red y tenemos URLs alternativas, reintentamos con la siguiente URL
+      if (!error.response && this.currentUrlIndex < this.apiUrls.length - 1) {
+        this.currentUrlIndex++;
+        const newBaseUrl = `${this.apiUrls[this.currentUrlIndex]}/api`;
+        this.client.defaults.baseURL = newBaseUrl;
+        console.log(`Reintentando login con URL alternativa: ${newBaseUrl}`);
+        
+        // Reintentar con la nueva URL
+        return this.login(credentials);
+      }
+      
+      // Si no hay más URLs para intentar o es otro tipo de error, lo propagamos
+      throw error;
+    }
   }
 
   /**
@@ -452,10 +484,59 @@ class ApiClient {
   }
 
   /**
-   * Obtener mantenimientos de un extintor
+   * Obtener mantenimientos de un extintor o todos los mantenimientos con filtros opcionales
    */
-  async getMantenimientos(extintorId: number): Promise<Mantenimiento[]> {
-    const response = await this.client.get<ApiResponse<Mantenimiento[]>>(`/mantenimientos/extintor/${extintorId}`);
+  async getMantenimientos(extintorIdOrFilters?: number | { search?: string; tipo?: string; estado?: string }): Promise<Mantenimiento[]> {
+    if (typeof extintorIdOrFilters === 'number') {
+      // Si es un número, obtener mantenimientos de un extintor específico
+      const response = await this.client.get<ApiResponse<Mantenimiento[]>>(`/mantenimientos/extintor/${extintorIdOrFilters}`);
+      return response.data.data!;
+    } else {
+      // Si es un objeto de filtros o undefined, obtener todos los mantenimientos con filtros opcionales
+      const params = new URLSearchParams();
+      
+      if (extintorIdOrFilters) {
+        Object.entries(extintorIdOrFilters).forEach(([key, value]) => {
+          if (value !== undefined && value !== null && value !== '') {
+            params.append(key, String(value));
+          }
+        });
+      }
+      
+      const response = await this.client.get<ApiResponse<Mantenimiento[]>>(`/mantenimientos?${params.toString()}`);
+      return response.data.data!;
+    }
+  }
+
+  /**
+   * Actualizar un mantenimiento existente
+   */
+  async updateMantenimiento(id: number, data: MantenimientoFormData): Promise<Mantenimiento> {
+    const formData = new FormData();
+    
+    Object.entries(data).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        if (key === 'evidencia' && value instanceof File) {
+          formData.append('evidencia', value);
+        } else {
+          formData.append(key, String(value));
+        }
+      }
+    });
+
+    const response = await this.client.put<ApiResponse<Mantenimiento>>(`/mantenimientos/${id}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data.data!;
+  }
+
+  /**
+   * Eliminar un mantenimiento
+   */
+  async deleteMantenimiento(id: number): Promise<boolean> {
+    const response = await this.client.delete<ApiResponse<boolean>>(`/mantenimientos/${id}`);
     return response.data.data!;
   }
 
@@ -499,6 +580,21 @@ class ApiClient {
   }
 
   /**
+   * Actualizar sede existente
+   */
+  async updateSede(id: number, data: Partial<Sede>): Promise<Sede> {
+    const response = await this.client.put<ApiResponse<Sede>>(`/sedes/${id}`, data);
+    return response.data.data!;
+  }
+
+  /**
+   * Eliminar sede
+   */
+  async deleteSede(id: number): Promise<void> {
+    await this.client.delete(`/sedes/${id}`);
+  }
+
+  /**
    * Crear nueva ubicación
    */
   async createUbicacion(data: Partial<Ubicacion>): Promise<Ubicacion> {
@@ -511,6 +607,27 @@ class ApiClient {
     
     const response = await this.client.post<ApiResponse<Ubicacion>>('/ubicaciones', payload);
     return response.data.data!;
+  }
+
+  /**
+   * Actualizar ubicación existente
+   */
+  async updateUbicacion(id: number, data: Partial<Ubicacion>): Promise<Ubicacion> {
+    const payload = {
+      nombre_area: data.nombre_area,
+      descripcion: data.descripcion,
+      sede_id: data.sede_id
+    };
+    
+    const response = await this.client.put<ApiResponse<Ubicacion>>(`/ubicaciones/${id}`, payload);
+    return response.data.data!;
+  }
+
+  /**
+   * Eliminar ubicación
+   */
+  async deleteUbicacion(id: number): Promise<void> {
+    await this.client.delete(`/ubicaciones/${id}`);
   }
 
   // ==================== TIPOS DE EXTINTORES ====================
@@ -690,11 +807,50 @@ class ApiClient {
    * Generar código QR para extintor
    */
   async generateQR(extintorId: number): Promise<Blob> {
-    const response = await this.client.get(`/extintores/${extintorId}/qr`, {
+    const response = await this.client.get(`/qr/generate/${extintorId}`, {
       responseType: 'blob',
     });
     
     return response.data;
+  }
+
+  /**
+   * Escanear código QR desde una imagen
+   */
+  async scanQR(formData: FormData): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.client.post<ApiResponse<any>>('/qr/scan', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError && !error.response) {
+        // Si es un error de red, intentar con URLs alternativas
+        for (let i = 1; i < this.apiUrls.length; i++) {
+          try {
+            const alternativeUrl = `${this.apiUrls[i]}/api`;
+            console.log(`Intentando escanear QR con URL alternativa: ${alternativeUrl}`);
+            
+            const altClient = axios.create({
+              baseURL: alternativeUrl,
+              timeout: 30000,
+              headers: {
+                'Content-Type': 'multipart/form-data',
+                ...(this.token ? { 'Authorization': `Bearer ${this.token}` } : {})
+              }
+            });
+            
+            const response = await altClient.post<ApiResponse<any>>('/qr/scan', formData);
+            return response.data;
+          } catch (altError) {
+            console.error(`Error con URL alternativa ${i}:`, altError);
+          }
+        }
+      }
+      throw error;
+    }
   }
 
   // ==================== BACKUP ====================
@@ -759,6 +915,7 @@ export const apiQueries = {
     usuario: (id: number) => [...apiQueries.keys.usuarios, id] as const,
     
     mantenimientos: ['mantenimientos'] as const,
+    mantenimientosList: (filters?: { search?: string; tipo?: string; estado?: string }) => [...apiQueries.keys.mantenimientos, 'list', filters] as const,
     mantenimientosByExtintor: (extintorId: number) => [...apiQueries.keys.mantenimientos, 'extintor', extintorId] as const,
   },
 
@@ -780,6 +937,6 @@ export const apiQueries = {
     getUsuarios: (filters?: { search?: string, rol?: string, activo?: string }) => apiClient.getUsuarios(filters),
     getUsuario: (id: number) => apiClient.getUsuario(id),
     
-    getMantenimientos: (extintorId: number) => apiClient.getMantenimientos(extintorId),
+    getMantenimientos: (extintorIdOrFilters?: number | { search?: string; tipo?: string; estado?: string }) => apiClient.getMantenimientos(extintorIdOrFilters),
   }
 };

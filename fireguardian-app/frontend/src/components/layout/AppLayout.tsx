@@ -30,6 +30,7 @@ type NavigationItem = {
   icon: React.ElementType;
   description: string;
   roles?: UserRole[];
+  disabled?: boolean; // Indica si la ruta está deshabilitada
 };
 
 const navigationItems: NavigationItem[] = [
@@ -50,6 +51,7 @@ const navigationItems: NavigationItem[] = [
     href: '/mantenimientos',
     icon: Wrench,
     description: 'Historial de mantenimientos',
+    disabled: true, // Deshabilitado por no tener contenido implementado
   },
   {
     name: 'Usuarios',
@@ -63,6 +65,7 @@ const navigationItems: NavigationItem[] = [
     href: '/reportes',
     icon: FileText,
     description: 'Reportes y exportación',
+    disabled: true, // Deshabilitado por no tener contenido implementado
   },
   {
     name: 'Configuración',
@@ -137,7 +140,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#F5F3E8] overflow-x-hidden" style={{ maxWidth: '100vw' }}>
+    <div className="min-h-screen bg-[#F5F3E8] overflow-x-hidden w-full" style={{ maxWidth: '100vw' }}>
       {/* Sidebar para móvil */}
       <AnimatePresence>
         {sidebarOpen && (
@@ -372,7 +375,11 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ navigation, currentPath, onItemClick, isExpanded = true }) => {
   const navigate = useNavigate();
 
-  const handleNavigation = (href: string) => {
+  const handleNavigation = (href: string, disabled?: boolean) => {
+    if (disabled) {
+      // No navegar si está deshabilitado
+      return;
+    }
     navigate(href);
     onItemClick?.();
   };
@@ -414,26 +421,31 @@ const Sidebar: React.FC<SidebarProps> = ({ navigation, currentPath, onItemClick,
           return (
             <motion.button
               key={item.name}
-              onClick={() => handleNavigation(item.href)}
+              onClick={() => handleNavigation(item.href, item.disabled)}
               className={cn(
                 'w-full flex items-center justify-center px-2 py-2 text-sm font-medium rounded-lg transition-all duration-200',
                 isActive
                   ? 'bg-primary-light text-primary-dark shadow-md'
-                  : 'text-text-primary hover:bg-secondary-light hover:text-secondary-dark'
+                  : item.disabled
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-text-primary hover:bg-secondary-light hover:text-secondary-dark'
               )}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              title={item.name}
+              whileHover={{ scale: item.disabled ? 1 : 1.05 }}
+              whileTap={{ scale: item.disabled ? 1 : 0.95 }}
+              title={item.disabled ? `${item.name} (No disponible)` : item.name}
               style={{ height: isExpanded ? 'auto' : '40px' }}
             >
               <Icon className={cn(
                 isExpanded ? 'h-5 w-5 mr-3' : 'h-5 w-5',
-                isActive ? 'text-primary-dark' : 'text-secondary-dark'
+                isActive ? 'text-primary-dark' : item.disabled ? 'text-gray-400' : 'text-secondary-dark'
               )} />
               {isExpanded && (
                 <div className="text-left overflow-hidden whitespace-nowrap flex-1">
-                  <div className="font-medium">{item.name}</div>
-                  <div className="text-xs text-text-secondary mt-0.5">
+                  <div className={cn("font-medium", item.disabled && "text-gray-400")}>
+                    {item.name}
+                    {item.disabled && <span className="ml-2 text-xs bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded">Próximamente</span>}
+                  </div>
+                  <div className={cn("text-xs mt-0.5", item.disabled ? "text-gray-400" : "text-text-secondary")}>
                     {item.description}
                   </div>
                 </div>

@@ -42,9 +42,18 @@ export const generateUniqueFileName = (originalName: string): string => {
 // Función para crear directorios si no existen
 export const ensureDirectoryExists = async (dirPath: string): Promise<void> => {
   try {
+    console.log(`Verificando si existe el directorio: ${dirPath}`);
     await fs.access(dirPath);
-  } catch {
-    await fs.mkdir(dirPath, { recursive: true });
+    console.log(`El directorio existe: ${dirPath}`);
+  } catch (error) {
+    console.log(`Creando directorio: ${dirPath}`);
+    try {
+      await fs.mkdir(dirPath, { recursive: true });
+      console.log(`Directorio creado exitosamente: ${dirPath}`);
+    } catch (mkdirError) {
+      console.error(`Error al crear directorio ${dirPath}:`, mkdirError);
+      throw new Error(`No se pudo crear el directorio ${dirPath}: ${(mkdirError as Error).message}`);
+    }
   }
 };
 

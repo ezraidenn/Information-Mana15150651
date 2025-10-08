@@ -250,22 +250,22 @@ export const ExtintorCard: React.FC<ExtintorCardProps> = ({ extintor, onEdit, on
         style={{ backgroundColor: extintor.tipo?.color_hex || '#EF4444' }}
       ></div>
       
-      <div className="p-4">
+      <div className="p-3 sm:p-4">
         {/* Encabezado */}
-        <div className="flex justify-between items-start mb-4">
+        <div className="flex justify-between items-start mb-3 sm:mb-4">
           <div>
-            <h3 className="text-lg font-semibold text-gray-800">{extintor.tipo?.nombre}</h3>
-            <div className="bg-gray-100 px-2 py-1 rounded-md inline-block mt-1">
-              <p className="text-sm font-mono font-medium text-gray-800">{extintor.codigo}</p>
+            <h3 className="text-base sm:text-lg font-semibold text-gray-800">{extintor.tipo?.nombre}</h3>
+            <div className="bg-gray-100 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md inline-block mt-1">
+              <p className="text-xs sm:text-sm font-mono font-medium text-gray-800">{extintor.codigo}</p>
             </div>
             {extintor.codigo_interno && (
-              <p className="text-xs text-gray-500 mt-1">Código interno: {extintor.codigo_interno}</p>
+              <p className="text-xs text-gray-500 mt-0.5 sm:mt-1">Código interno: {extintor.codigo_interno}</p>
             )}
           </div>
           
           {/* Estado del extintor */}
           <div className="flex items-center">
-            <div className={`px-2 py-1 rounded-md text-xs font-medium ${getEstadoColor(extintor.estado)}`}>
+            <div className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md text-xs font-medium ${getEstadoColor(extintor.estado)}`}>
               <div className="flex items-center gap-1">
                 {React.createElement(getEstadoIcon(extintor.estado), { className: 'w-3 h-3' })}
                 <span>{extintor.estado || 'ACTIVO'}</span>
@@ -285,9 +285,9 @@ export const ExtintorCard: React.FC<ExtintorCardProps> = ({ extintor, onEdit, on
         
         {/* Clases de fuego */}
         {clasesFuego.length > 0 && (
-          <div className="mb-4">
-            <p className="text-xs text-gray-500 mb-2">Clases de fuego:</p>
-            <div className="flex flex-wrap gap-2">
+          <div className="mb-3 sm:mb-4">
+            <p className="text-xs text-gray-500 mb-1 sm:mb-2">Clases de fuego:</p>
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
               {clasesFuego.map((clase: string) => (
                 <div 
                   key={clase}
@@ -296,14 +296,14 @@ export const ExtintorCard: React.FC<ExtintorCardProps> = ({ extintor, onEdit, on
                   onClick={(e) => handleFireClassClick(clase, e)}
                 >
                   <div 
-                    className={`w-8 h-8 flex items-center justify-center border rounded-md overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer ${activeTooltip === clase ? 'ring-2 ring-blue-500 border-transparent' : 'border-gray-300'}`}
+                    className={`w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center border rounded-md overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer ${activeTooltip === clase ? 'ring-2 ring-blue-500 border-transparent' : 'border-gray-300'}`}
                     style={{ borderColor: activeTooltip === clase ? 'transparent' : claseFuegoInfo[clase]?.color }}
                     title="Haz clic para ver información"
                   >
                     <img 
                       src={claseFuegoInfo[clase]?.icon} 
                       alt={`Clase ${clase}`} 
-                      className="w-7 h-7 object-contain" 
+                      className="w-6 h-6 sm:w-7 sm:h-7 object-contain" 
                     />
                   </div>
                 </div>
@@ -324,31 +324,31 @@ export const ExtintorCard: React.FC<ExtintorCardProps> = ({ extintor, onEdit, on
         )}
 
         {/* Información adicional */}
-        <div className="space-y-2 mb-4">
+        <div className="space-y-1.5 sm:space-y-2 mb-3 sm:mb-4">
           {/* Ubicación */}
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <MapPin className="w-4 h-4 flex-shrink-0" />
+          <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-gray-600">
+            <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
             <span className="truncate">{getUbicacionCompleta()}</span>
           </div>
           
           {/* Fecha de vencimiento */}
-          <div className="mb-4">
-            <p className="text-xs text-gray-500 mb-1">Fecha de vencimiento:</p>
+          <div className="mb-3 sm:mb-4">
+            <p className="text-xs text-gray-500 mb-0.5 sm:mb-1">Fecha de vencimiento:</p>
             <div className="flex items-center gap-1">
-              <Calendar className="w-4 h-4 text-gray-500" />
-              <span className="text-sm font-medium">{formatDate(extintor.fecha_vencimiento)}</span>
+              <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500" />
+              <span className="text-xs sm:text-sm font-medium">{formatDate(extintor.fecha_vencimiento)}</span>
             </div>
-            <div className="mt-2">
+            <div className="mt-1.5 sm:mt-2">
               {diasVencimiento > 30 ? (
-                <div className="bg-green-600 text-white text-xs p-1.5 rounded-md text-center shadow-sm">
+                <div className="bg-green-600 text-white text-xs p-1 sm:p-1.5 rounded-md text-center shadow-sm">
                   <span className="font-semibold">Vence en:</span> {diasVencimiento} días
                 </div>
               ) : diasVencimiento > 0 ? (
-                <div className="bg-yellow-500 text-white text-xs p-1.5 rounded-md text-center shadow-sm">
+                <div className="bg-yellow-500 text-white text-xs p-1 sm:p-1.5 rounded-md text-center shadow-sm">
                   <span className="font-semibold">¡Próximo a vencer!</span> {diasVencimiento} días
                 </div>
               ) : (
-                <div className="bg-red-600 text-white text-xs p-1.5 rounded-md text-center shadow-sm">
+                <div className="bg-red-600 text-white text-xs p-1 sm:p-1.5 rounded-md text-center shadow-sm">
                   <span className="font-semibold">Vencido hace:</span> {Math.abs(diasVencimiento)} días
                 </div>
               )}
@@ -368,8 +368,8 @@ export const ExtintorCard: React.FC<ExtintorCardProps> = ({ extintor, onEdit, on
 
         {/* Observaciones */}
         {extintor.observaciones && (
-          <div className="mb-4 p-2 bg-gray-50 rounded-md">
-            <p className="text-sm text-gray-500 line-clamp-2">
+          <div className="mb-3 sm:mb-4 p-1.5 sm:p-2 bg-gray-50 rounded-md">
+            <p className="text-xs sm:text-sm text-gray-500 line-clamp-2">
               {extintor.observaciones}
             </p>
           </div>
@@ -377,38 +377,38 @@ export const ExtintorCard: React.FC<ExtintorCardProps> = ({ extintor, onEdit, on
       </div>
       
       {/* Acciones - Movidas al final de la tarjeta */}
-      <div className="border-t mt-4 pt-3 flex justify-center gap-2">
+      <div className="border-t mt-3 sm:mt-4 pt-2 sm:pt-3 flex justify-center gap-1 sm:gap-2">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => window.open(`/qr/${extintor.id}`, '_blank')}
-          className="flex-1 rounded-md border border-gray-200 hover:bg-blue-50 hover:border-blue-300 transition-all"
+          className="flex-1 rounded-md border border-gray-200 hover:bg-blue-50 hover:border-blue-300 transition-all py-1 sm:py-2"
         >
           <div className="flex flex-col items-center">
-            <FileText className="h-5 w-5 text-blue-600" />
-            <span className="text-xs mt-1 font-medium text-blue-600">Ver QR</span>
+            <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+            <span className="text-[10px] sm:text-xs mt-0.5 sm:mt-1 font-medium text-blue-600">Ver QR</span>
           </div>
         </Button>
         <Button
           variant="ghost"
           size="sm"
           onClick={() => onEdit(extintor)}
-          className="flex-1 rounded-md border border-gray-200 hover:bg-green-50 hover:border-green-300 transition-all"
+          className="flex-1 rounded-md border border-gray-200 hover:bg-green-50 hover:border-green-300 transition-all py-1 sm:py-2"
         >
           <div className="flex flex-col items-center">
-            <Edit className="h-5 w-5 text-green-600" />
-            <span className="text-xs mt-1 font-medium text-green-600">Editar</span>
+            <Edit className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
+            <span className="text-[10px] sm:text-xs mt-0.5 sm:mt-1 font-medium text-green-600">Editar</span>
           </div>
         </Button>
         <Button
           variant="ghost"
           size="sm"
           onClick={() => onDelete(extintor.id)}
-          className="flex-1 rounded-md border border-gray-200 hover:bg-red-50 hover:border-red-300 transition-all"
+          className="flex-1 rounded-md border border-gray-200 hover:bg-red-50 hover:border-red-300 transition-all py-1 sm:py-2"
         >
           <div className="flex flex-col items-center">
-            <Trash2 className="h-5 w-5 text-red-600" />
-            <span className="text-xs mt-1 font-medium text-red-600">Eliminar</span>
+            <Trash2 className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
+            <span className="text-[10px] sm:text-xs mt-0.5 sm:mt-1 font-medium text-red-600">Eliminar</span>
           </div>
         </Button>
       </div>

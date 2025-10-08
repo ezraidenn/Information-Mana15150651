@@ -91,12 +91,47 @@ export class ExtintorController {
       
       // Aplicar filtro de estado - SOLO usar el campo estado explícito
       if (estado) {
-        // Filtrar SOLO por el campo estado explícito, ignorando completamente las propiedades calculadas
-        extintoresFiltrados = extintoresFiltrados.filter(e => e.estado === estado);
-        
-        // Si no hay resultados, es posible que sea porque los extintores antiguos no tienen el campo estado
-        // En ese caso, no hacemos nada y simplemente devolvemos una lista vacía
-        // Esto fuerza al usuario a asignar explícitamente el estado a través del formulario
+        if (estado === 'VENCIDO') {
+          // Para el estado VENCIDO, aplicamos una lógica especial que incluye la fecha de vencimiento
+          // Primero actualizamos todos los extintores vencidos en la base de datos
+          const hoy = new Date();
+          const extintoresVencidos = await extintorRepo
+            .createQueryBuilder('extintor')
+            .where('extintor.fecha_vencimiento < :hoy', { hoy })
+            .andWhere('extintor.estado != :estado', { estado: 'VENCIDO' })
+            .getMany();
+          
+          // Actualizar el estado de los extintores vencidos
+          for (const extintor of extintoresVencidos) {
+            extintor.estado = 'VENCIDO';
+            await extintorRepo.save(extintor);
+          }
+          
+          // Ahora aplicamos el filtro de VENCIDO directamente en la consulta SQL
+          // Esto asegura que la paginación se aplique correctamente
+          query = query.andWhere('(extintor.estado = :estado OR extintor.fecha_vencimiento < :hoy)', { 
+            estado: 'VENCIDO', 
+            hoy: hoy
+          });
+          
+          // Volvemos a ejecutar la consulta con el nuevo filtro
+          const total = await query.getCount();
+          query = query.skip(offset).take(limitNumber);
+          extintoresFiltrados = await query.getMany();
+        } else {
+          // Para otros estados, filtramos normalmente
+          extintoresFiltrados = extintoresFiltrados.filter(e => e.estado === estado);
+        }
+      }
+
+      // Actualizar automáticamente el estado de los extintores vencidos
+      for (const extintor of extintoresFiltrados) {
+        // Si la fecha de vencimiento ya pasó y el estado no es VENCIDO, actualizarlo
+        if (extintor.estado_vencimiento === 'vencido' && extintor.estado !== 'VENCIDO') {
+          extintor.estado = 'VENCIDO';
+          // Guardar el cambio en la base de datos
+          await extintorRepo.save(extintor);
+        }
       }
 
       // Formatear respuesta manteniendo las propiedades calculadas originales
@@ -169,6 +204,12 @@ export class ExtintorController {
           'Extintor no encontrado'
         ));
         return;
+      }
+      
+      // Actualizar automáticamente el estado si está vencido
+      if (extintor.estado_vencimiento === 'vencido' && extintor.estado !== 'VENCIDO') {
+        extintor.estado = 'VENCIDO';
+        await extintorRepo.save(extintor);
       }
 
       const extintorDetallado = {
@@ -521,6 +562,16 @@ export class ExtintorController {
         .where('extintor.ubicacion_id = :ubicacionId', { ubicacionId })
         .orderBy('extintor.codigo_interno', 'ASC')
         .getMany();
+        
+      // Actualizar automáticamente el estado de los extintores vencidos
+      for (const extintor of extintores) {
+        // Si la fecha de vencimiento ya pasó y el estado no es VENCIDO, actualizarlo
+        if (extintor.estado_vencimiento === 'vencido' && extintor.estado !== 'VENCIDO') {
+          extintor.estado = 'VENCIDO';
+          // Guardar el cambio en la base de datos
+          await extintorRepo.save(extintor);
+        }
+      }
 
       const extintoresFormateados = extintores.map(extintor => ({
         ...extintor,

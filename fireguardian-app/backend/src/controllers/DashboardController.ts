@@ -16,113 +16,119 @@ export class DashboardController {
    */
   static async getStats(req: AuthRequest, res: Response): Promise<void> {
     try {
+      console.log('Solicitud de estadísticas recibida');
+      
       const extintorRepo = AppDataSource.getRepository(Extintor);
-      const tipoRepo = AppDataSource.getRepository(TipoExtintor);
-      const ubicacionRepo = AppDataSource.getRepository(Ubicacion);
-      const sedeRepo = AppDataSource.getRepository(Sede);
-      const mantenimientoRepo = AppDataSource.getRepository(Mantenimiento);
-
-      // Obtener todos los extintores con sus relaciones
-      const extintores = await extintorRepo.find({
-        relations: ['tipo', 'ubicacion', 'ubicacion.sede']
-      });
-
-      // Calcular estadísticas básicas
-      const totalExtintores = extintores.length;
-      let extintoresVencidos = 0;
-      let extintoresPorVencer = 0;
-      let extintoresVigentes = 0;
-      let mantenimientosPendientes = 0;
-
       const hoy = new Date();
-      const fechaLimite = new Date();
-      fechaLimite.setDate(hoy.getDate() + 30); // 30 días para considerar "por vencer"
+      const fecha30Dias = new Date(hoy);
+      fecha30Dias.setDate(fecha30Dias.getDate() + 30);
 
-      extintores.forEach(extintor => {
-        const fechaVencimiento = new Date(extintor.fecha_vencimiento);
-        
-        if (fechaVencimiento < hoy) {
-          extintoresVencidos++;
-        } else if (fechaVencimiento <= fechaLimite) {
-          extintoresPorVencer++;
-        } else {
-          extintoresVigentes++;
-        }
+      // 1. Total de extintores
+      const total_extintores = await extintorRepo.count();
 
-        if (extintor.requiere_mantenimiento) {
-          mantenimientosPendientes++;
-        }
-      });
-
-      // Estadísticas por tipo de extintor
-      const extintoresPorTipo = await extintorRepo
+      // 2. Extintores vencidos (fecha_vencimiento < hoy)
+      const extintores_vencidos = await extintorRepo
         .createQueryBuilder('extintor')
-        .leftJoinAndSelect('extintor.tipo', 'tipo')
-        .select([
-          'tipo.id as tipo',
-          'tipo.nombre as nombre',
-          'tipo.color_hex as color',
-          'COUNT(extintor.id) as cantidad'
-        ])
-        .groupBy('tipo.id, tipo.nombre, tipo.color_hex')
+        .where('extintor.fecha_vencimiento < :hoy', { hoy: hoy.toISOString().split('T')[0] })
+        .getCount();
+
+      // 3. Extintores por vencer (fecha_vencimiento entre hoy y +30 días)
+      const extintores_por_vencer = await extintorRepo
+        .createQueryBuilder('extintor')
+        .where('extintor.fecha_vencimiento >= :hoy', { hoy: hoy.toISOString().split('T')[0] })
+        .andWhere('extintor.fecha_vencimiento <= :fecha30', { fecha30: fecha30Dias.toISOString().split('T')[0] })
+        .getCount();
+
+      // 4. Extintores vigentes
+      const extintores_vigentes = total_extintores - extintores_vencidos - extintores_por_vencer;
+
+      // 5. Mantenimientos pendientes (extintores sin mantenimiento en +365 días)
+      const hace1Anio = new Date(hoy);
+      hace1Anio.setFullYear(hace1Anio.getFullYear() - 1);
+      
+      const mantenimientos_pendientes = await extintorRepo
+        .createQueryBuilder('extintor')
+        .where('extintor.fecha_mantenimiento IS NULL OR extintor.fecha_mantenimiento < :hace1Anio', 
+          { hace1Anio: hace1Anio.toISOString().split('T')[0] })
+        .getCount();
+
+      // 6. Extintores por tipo
+      const porTipo = await extintorRepo
+        .createQueryBuilder('extintor')
+        .leftJoin('extintor.tipo', 'tipo')
+        .select('tipo.id', 'tipo')
+        .addSelect('tipo.nombre', 'nombre')
+        .addSelect('COUNT(extintor.id)', 'cantidad')
+        .groupBy('tipo.id')
+        .addGroupBy('tipo.nombre')
         .getRawMany();
 
-      // Estadísticas por ubicación
-      const extintoresPorUbicacion = await extintorRepo
+      const extintores_por_tipo = porTipo.map(item => ({
+        tipo: item.tipo,
+        nombre: item.nombre,
+        cantidad: parseInt(item.cantidad),
+        color: '#6B7280' // Color por defecto
+      }));
+
+      // 7. Extintores por ubicación
+      const porUbicacion = await extintorRepo
         .createQueryBuilder('extintor')
-        .leftJoinAndSelect('extintor.ubicacion', 'ubicacion')
-        .leftJoinAndSelect('ubicacion.sede', 'sede')
-        .select([
-          'ubicacion.nombre_area as ubicacion',
-          'sede.nombre as sede',
-          'COUNT(extintor.id) as cantidad'
-        ])
-        .groupBy('ubicacion.id, ubicacion.nombre_area, sede.nombre')
+        .leftJoin('extintor.ubicacion', 'ubicacion')
+        .leftJoin('ubicacion.sede', 'sede')
+        .select('ubicacion.nombre_area', 'ubicacion')
+        .addSelect('sede.nombre', 'sede')
+        .addSelect('COUNT(extintor.id)', 'cantidad')
+        .where('ubicacion.nombre_area IS NOT NULL')
+        .groupBy('ubicacion.nombre_area')
+        .addGroupBy('sede.nombre')
+        .orderBy('COUNT(extintor.id)', 'DESC')
+        .limit(10)
         .getRawMany();
 
-      // Vencimientos próximos (próximos 60 días)
-      const fechaLimiteExtendida = new Date();
-      fechaLimiteExtendida.setDate(hoy.getDate() + 60);
+      const extintores_por_ubicacion = porUbicacion.map(item => ({
+        ubicacion: item.ubicacion || 'Sin ubicación',
+        sede: item.sede || 'Sin sede',
+        cantidad: parseInt(item.cantidad)
+      }));
 
+      // 8. Vencimientos próximos (próximos 30 días, ordenados por fecha)
       const vencimientosProximos = await extintorRepo
         .createQueryBuilder('extintor')
         .leftJoinAndSelect('extintor.tipo', 'tipo')
         .leftJoinAndSelect('extintor.ubicacion', 'ubicacion')
         .leftJoinAndSelect('ubicacion.sede', 'sede')
-        .where('extintor.fecha_vencimiento BETWEEN :hoy AND :limite', {
-          hoy: hoy.toISOString().split('T')[0],
-          limite: fechaLimiteExtendida.toISOString().split('T')[0]
-        })
+        .where('extintor.fecha_vencimiento >= :hoy', { hoy: hoy.toISOString().split('T')[0] })
+        .andWhere('extintor.fecha_vencimiento <= :fecha30', { fecha30: fecha30Dias.toISOString().split('T')[0] })
         .orderBy('extintor.fecha_vencimiento', 'ASC')
+        .limit(10)
         .getMany();
 
-      const vencimientosFormateados = vencimientosProximos.map(extintor => ({
-        id: extintor.id,
-        codigo_interno: extintor.codigo_interno,
-        tipo: extintor.tipo.nombre,
-        ubicacion: `${extintor.ubicacion.nombre_area} - ${extintor.ubicacion.sede.nombre}`,
-        fecha_vencimiento: extintor.fecha_vencimiento.toISOString().split('T')[0],
-        dias_restantes: extintor.dias_para_vencimiento
-      }));
+      const vencimientos_proximos = vencimientosProximos.map(ext => {
+        const diasRestantes = ext.dias_para_vencimiento;
+        // Convertir fecha a string - SQLite devuelve strings
+        const fechaStr = String(ext.fecha_vencimiento).split('T')[0];
+          
+        return {
+          id: ext.id,
+          codigo_interno: ext.codigo_interno || 'N/A',
+          tipo: ext.tipo?.nombre || 'N/A',
+          ubicacion: ext.ubicacion 
+            ? `${ext.ubicacion.nombre_area} - ${ext.ubicacion.sede?.nombre || 'N/A'}`
+            : 'N/A',
+          fecha_vencimiento: fechaStr,
+          dias_restantes: diasRestantes
+        };
+      });
 
       const stats: DashboardStats = {
-        total_extintores: totalExtintores,
-        extintores_vencidos: extintoresVencidos,
-        extintores_por_vencer: extintoresPorVencer,
-        extintores_vigentes: extintoresVigentes,
-        mantenimientos_pendientes: mantenimientosPendientes,
-        extintores_por_tipo: extintoresPorTipo.map(item => ({
-          tipo: item.tipo,
-          nombre: item.nombre,
-          cantidad: parseInt(item.cantidad),
-          color: item.color || '#6B7280'
-        })),
-        extintores_por_ubicacion: extintoresPorUbicacion.map(item => ({
-          ubicacion: item.ubicacion,
-          sede: item.sede,
-          cantidad: parseInt(item.cantidad)
-        })),
-        vencimientos_proximos: vencimientosFormateados
+        total_extintores,
+        extintores_vencidos,
+        extintores_por_vencer,
+        extintores_vigentes,
+        mantenimientos_pendientes,
+        extintores_por_tipo,
+        extintores_por_ubicacion,
+        vencimientos_proximos
       };
 
       res.json(createApiResponse(

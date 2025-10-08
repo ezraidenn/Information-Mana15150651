@@ -105,6 +105,23 @@ const UbicacionesPage: React.FC = () => {
     }
   });
 
+  // Mutación para actualizar sede
+  const updateSedeMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<Sede> }) => {
+      return apiClient.updateSede(id, data);
+    },
+    onSuccess: () => {
+      toast.success('Sede actualizada correctamente');
+      setShowForm(false);
+      resetForm();
+      queryClient.invalidateQueries({ queryKey: apiQueries.keys.sedes });
+    },
+    onError: (error: any) => {
+      console.error('Error al actualizar sede:', error);
+      toast.error('Error al actualizar la sede');
+    }
+  });
+
   // Mutación para crear ubicación
   const createUbicacionMutation = useMutation({
     mutationFn: (ubicacion: Partial<Ubicacion>) => {
@@ -138,6 +155,25 @@ const UbicacionesPage: React.FC = () => {
     onError: (error: any) => {
       console.error('Error al crear ubicación:', error);
       toast.error(`Error al crear la ubicación: ${error.message || 'Error desconocido'}`);
+    }
+  });
+
+  // Mutación para actualizar ubicación
+  const updateUbicacionMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<Ubicacion> }) => {
+      return apiClient.updateUbicacion(id, data);
+    },
+    onSuccess: () => {
+      toast.success('Ubicación actualizada correctamente');
+      setShowForm(false);
+      resetForm();
+      queryClient.invalidateQueries({ queryKey: apiQueries.keys.ubicaciones });
+      queryClient.invalidateQueries({ queryKey: apiQueries.keys.sedes });
+      refetchUbicaciones();
+    },
+    onError: (error: any) => {
+      console.error('Error al actualizar ubicación:', error);
+      toast.error('Error al actualizar la ubicación');
     }
   });
 
@@ -192,8 +228,13 @@ const UbicacionesPage: React.FC = () => {
     }
     
     if (isEditing && currentSede) {
-      // Lógica para actualizar sede (pendiente de implementar en API)
-      toast.error('Función de actualización de sede no implementada');
+      updateSedeMutation.mutate({
+        id: currentSede.id,
+        data: {
+          nombre: sedeFormData.nombre,
+          direccion: sedeFormData.direccion
+        }
+      });
     } else {
       createSedeMutation.mutate({
         nombre: sedeFormData.nombre,
@@ -217,8 +258,19 @@ const UbicacionesPage: React.FC = () => {
     }
     
     if (isEditing && currentUbicacion) {
-      // Lógica para actualizar ubicación (pendiente de implementar en API)
-      toast.error('Función de actualización de ubicación no implementada');
+      try {
+        await updateUbicacionMutation.mutateAsync({
+          id: currentUbicacion.id,
+          data: {
+            nombre_area: ubicacionFormData.nombre_area,
+            descripcion: ubicacionFormData.descripcion,
+            sede_id: ubicacionFormData.sede_id
+          }
+        });
+      } catch (error: any) {
+        console.error('Error al actualizar ubicación:', error);
+        toast.error(`Error: ${error.message || 'Error desconocido'}`);
+      }
     } else {
       try {
         console.log('Enviando datos del formulario:', ubicacionFormData);
@@ -448,7 +500,7 @@ const UbicacionesPage: React.FC = () => {
                   </Button>
                   <Button
                     type="submit"
-                    loading={createSedeMutation.isPending}
+                    loading={createSedeMutation.isPending || updateSedeMutation.isPending}
                   >
                     {isEditing ? 'Actualizar' : 'Crear'}
                   </Button>
@@ -500,7 +552,7 @@ const UbicacionesPage: React.FC = () => {
                   </Button>
                   <Button
                     type="submit"
-                    loading={createUbicacionMutation.isPending}
+                    loading={createUbicacionMutation.isPending || updateUbicacionMutation.isPending}
                   >
                     {isEditing ? 'Actualizar' : 'Crear'}
                   </Button>

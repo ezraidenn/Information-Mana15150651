@@ -57,7 +57,10 @@ const TiposExtintoresPage: React.FC = () => {
       toast.success('Tipo de extintor creado correctamente');
       setShowForm(false);
       resetForm();
+      // Invalidar caché de tipos de extintores
       queryClient.invalidateQueries({ queryKey: ['tipos-extintores'] });
+      // Invalidar también el caché de extintores para que se actualicen las clases de fuego
+      queryClient.invalidateQueries({ queryKey: ['extintores'] });
     },
     onError: (error: any) => {
       console.error('Error al crear tipo de extintor:', error);
@@ -73,7 +76,11 @@ const TiposExtintoresPage: React.FC = () => {
       toast.success('Tipo de extintor actualizado correctamente');
       setShowForm(false);
       resetForm();
+      // Invalidar caché de tipos de extintores
       queryClient.invalidateQueries({ queryKey: ['tipos-extintores'] });
+      // Invalidar también el caché de extintores para que se actualicen las clases de fuego
+      queryClient.invalidateQueries({ queryKey: ['extintores'] });
+      toast.success('Los cambios se reflejarán en todos los extintores de este tipo');
     },
     onError: (error: any) => {
       console.error('Error al actualizar tipo de extintor:', error);
@@ -86,7 +93,10 @@ const TiposExtintoresPage: React.FC = () => {
     mutationFn: (id: string) => apiClient.deleteTipoExtintor(id),
     onSuccess: () => {
       toast.success('Tipo de extintor eliminado correctamente');
+      // Invalidar caché de tipos de extintores
       queryClient.invalidateQueries({ queryKey: ['tipos-extintores'] });
+      // Invalidar también el caché de extintores
+      queryClient.invalidateQueries({ queryKey: ['extintores'] });
     },
     onError: (error: any) => {
       console.error('Error al eliminar tipo de extintor:', error);
